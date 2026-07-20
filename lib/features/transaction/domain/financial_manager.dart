@@ -28,16 +28,16 @@ class FinancialManager {
       isActive:  true
     );
     _walletLists.add(newWallet);
-    print("[FINANCIAL_MANAGER::CREATE_WALLET] Khoi tao vi $newCategory, ID: $newWallet.id thanh cong!");
+    print("[FINANCIAL_MANAGER::CREATE_WALLET] Khoi tao vi $newCategory, ID: ${newWallet.id} thanh cong!");
   }
 
   void deleteWallet(int deleteID) {
     int index = searchWalletIndex(deleteID);
     if (index != -1) {
+      print("[FINANCIAL_MANAGER::DELETE_WALLET] Xoa vi ${_walletLists[index].category}, ID: ${_walletLists[index].id} thanh cong!");
       _walletLists.removeAt(index);
-      print("[FINANCIAL_MANAGER::DELETE_WALLET] Xoa vi ${_walletLists[index].category}, ID: ${_walletLists[index].id} da ton tai!");
     } else {
-      print ("[FINANCIAL_MANAGER::DELETE_WALLET] Vi co ten ${_walletLists[index].category} da ton tai!");
+      print ("[FINANCIAL_MANAGER::DELETE_WALLET] Vi co ten ${_walletLists[index].category} khong ton tai!");
     }
   }
 
@@ -63,8 +63,16 @@ class FinancialManager {
   //----------------------------------------------------------------------------//
 
   bool transferMoney(int fromWalletID, int toWalletID, int amount, String description) {
-    final Wallet fromWallet = _walletLists[searchWalletIndex(fromWalletID)];
-    final Wallet toWallet = _walletLists[searchWalletIndex(toWalletID)];
+    int fromIndex = searchWalletIndex(fromWalletID);
+    int toIndex = searchWalletIndex(toWalletID);
+
+    if (fromIndex == -1 || toIndex == -1) {
+      print("[FINANCIAL_MANAGER::TRANSFER] Giao dich that bai. Khong tim thay ID vi nguon hoac vi dich!");
+      return false;
+    }
+
+    final Wallet fromWallet = _walletLists[fromIndex];
+    final Wallet toWallet = _walletLists[toIndex];
 
     if (!fromWallet.canWithdraw(amount)) {
       print("[FINANCIAL_MANAGER::TRANSFER] Giao dich that bai do STK nguon khong du so du!");
@@ -89,12 +97,18 @@ class FinancialManager {
 
   bool topUpPhoneCredit(int fromWalletID, int amount, String phoneNumber) {
     if (!isValidVietnamesePhoneCredit(phoneNumber)) {
-      print("[FINANCIAL::PHONETOPUP] So thue bao $phoneNumber khong hop le de nap tien!");
+      print("[FINANCIAL::PHONE_TOPUP] So thue bao $phoneNumber khong hop le de nap tien!");
+      return false;
+    }
+    
+    int fromIndex = searchWalletIndex(fromWalletID);
+
+    if (fromIndex == -1 ) {
+      print("[FINANCIAL_MANAGER::PHONE_TOPUP] Giao dich that bai. Khong tim thay ID vi nguon!");
       return false;
     }
 
-    final Wallet fromWallet = _walletLists[searchWalletIndex(fromWalletID)];
-    
+    final Wallet fromWallet = _walletLists[fromIndex];
     final TransactionModel transaction = TransactionModel(
       id: DateTime.now().microsecondsSinceEpoch,
       type: TransactionType.expense,
@@ -106,12 +120,19 @@ class FinancialManager {
 
     fromWallet.withdraw(amount);
     _transactionHistory.add(transaction);
-    print("[FINANCIAL_MANAGER::TOPUP] Nap $amount VND cho so $phoneNumber thanh cong tu vi ${fromWallet.category}!");
+    print("[FINANCIAL_MANAGER::PHONE_TOPUP] Nap $amount VND cho so $phoneNumber thanh cong tu vi ${fromWallet.category}!");
     return true;
   }
   
   bool purchaseMobileData(int fromWalletID, InternetServiceProvider isp, String mobileDataplan, String phoneNumber) {
-    final Wallet fromWallet = _walletLists[searchWalletIndex(fromWalletID)];
+    int fromIndex = searchWalletIndex(fromWalletID);
+
+    if (fromIndex == -1 ) {
+      print("[FINANCIAL_MANAGER::MOBILE_DATA] Giao dich that bai. Khong tim thay ID vi nguon!");
+      return false;
+    }
+
+    final Wallet fromWallet = _walletLists[fromIndex];
 
     // Tim gia tien ung voi goi cuoc mobileDataplan
     int? amount = commonMobileDataPlan[mobileDataplan];
@@ -125,13 +146,13 @@ class FinancialManager {
       type: TransactionType.expense,
       category: "Mua goi cuoc data",
       amount: amount,
-      description: "Mua goi cuoc data $mobileDataplan voi gia $amount VND cho thue bao $phoneNumber thanh cong!",
+      description: "Mua goi cuoc Data $isp $mobileDataplan voi gia $amount VND cho thue bao $phoneNumber thanh cong!",
       dateTime: DateTime.now()
     );
 
     fromWallet.withdraw(amount);
     _transactionHistory.add(transaction);
-    print("[FINANCIAL_MANAGER::MOBILE_DATA] Mua goi cuoc data $mobileDataplan voi gia $amount VND cho thue bao $phoneNumber thanh cong!");
+    print("[FINANCIAL_MANAGER::MOBILE_DATA] Mua goi cuoc data $mobileDataplan tri gia $amount VND cho thue bao $phoneNumber thanh cong!");
     return true;
   }
   

@@ -20,20 +20,20 @@ class Wallet {
   void withdraw(int amount) {
     if (canWithdraw(amount)) {
       balance -= amount;
-      print("[WALLET::WITHDRAW] (Wallet ID: $id): Withdraw $amount VND successfully! Purpose: $category.");
+      print("[WALLET::WITHDRAW] (Wallet ID: $id): Rut $amount VND thanh cong!");
       print("Current balance: $balance");
     } else {
-      print("[WALLET::WITHDRAW] (Wallet ID: $id): Withdraw failed! Please deposit more.");
+      print("[WALLET::WITHDRAW] (Wallet ID: $id): Rut tien khong thanh cong! Vui long nap them tien!");
     }
   }
 
   void deposit(int amount) {
     if (isActive) {
       balance += amount;
-      print("[WALLET::DEPOSIT] (WalleT's ID: $id): Deposit $amount successfully! Purpose: $category.");
+      print("[WALLET::DEPOSIT] (WalleT's ID: $id): Nap $amount VND thanh cong!");
       print("Current balance: $balance");
     } else {
-      print("[WALLER::DEPOSIT] (Wallet's ID: $id): Deposit failed! Wallet is not active!");
+      print("[WALLER::DEPOSIT] (Wallet's ID: $id): Nap tien khong thanh cong! Vi hien tai khong hoat dong!");
     }
   }
 
