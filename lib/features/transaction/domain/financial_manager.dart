@@ -1,3 +1,4 @@
+import 'package:expense_tracker/features/transaction/domain/mobile_data.dart';
 import 'package:expense_tracker/features/transaction/domain/mp_wallet.dart';
 import 'package:expense_tracker/features/transaction/domain/transaction.dart';
 
@@ -55,11 +56,13 @@ class FinancialManager {
       trans.showTransactionInfo();
     }
   }
+ 
+ 
   //----------------------------------------------------------------------------//
   // Cac phuong thuc nghiep vu: Giao dich, kiem ke, dich vu
   //----------------------------------------------------------------------------//
 
-  bool transferMoney(int fromWalletID, int toWalletID, int amount, String category, String description) {
+  bool transferMoney(int fromWalletID, int toWalletID, int amount, String description) {
     final Wallet fromWallet = _walletLists[searchWalletIndex(fromWalletID)];
     final Wallet toWallet = _walletLists[searchWalletIndex(toWalletID)];
 
@@ -71,7 +74,7 @@ class FinancialManager {
     final TransactionModel transaction = TransactionModel(
       id: DateTime.now().microsecondsSinceEpoch,
       type: TransactionType.transfer,
-      category: category,
+      category: "Giao dich chuyen tien",
       amount: amount,
       description: description,
       dateTime: DateTime.now()
@@ -80,10 +83,105 @@ class FinancialManager {
     fromWallet.withdraw(amount);
     toWallet.deposit(amount);
     _transactionHistory.add(transaction);
+    print("[FINANCIAL_MANAGER::TRANSFER] Chuyen $amount VND tu vi ${fromWallet.category} sang vi ${toWallet.category} thanh cong!");
     return true;
   }
 
+  bool topUpPhoneCredit(int fromWalletID, int amount, String phoneNumber) {
+    if (!isValidVietnamesePhoneCredit(phoneNumber)) {
+      print("[FINANCIAL::PHONETOPUP] So thue bao $phoneNumber khong hop le de nap tien!");
+      return false;
+    }
 
+    final Wallet fromWallet = _walletLists[searchWalletIndex(fromWalletID)];
+    
+    final TransactionModel transaction = TransactionModel(
+      id: DateTime.now().microsecondsSinceEpoch,
+      type: TransactionType.expense,
+      category: "Nap tien dien thoai",
+      amount: amount,
+      description: "Nap $amount VND cho thue bao $phoneNumber",
+      dateTime: DateTime.now()
+    );
+
+    fromWallet.withdraw(amount);
+    _transactionHistory.add(transaction);
+    print("[FINANCIAL_MANAGER::TOPUP] Nap $amount VND cho so $phoneNumber thanh cong tu vi ${fromWallet.category}!");
+    return true;
+  }
+  
+  bool purchaseMobileData(int fromWalletID, InternetServiceProvider isp, String mobileDataplan, String phoneNumber) {
+    final Wallet fromWallet = _walletLists[searchWalletIndex(fromWalletID)];
+
+    // Tim gia tien ung voi goi cuoc mobileDataplan
+    int? amount = commonMobileDataPlan[mobileDataplan];
+    if (amount == null) {
+      print("[FINANCIAL_MANAGER::MOBILE_DATA] Goi cuoc data $mobileDataplan khong kha dung!");
+      return false;
+    }
+
+    final TransactionModel transaction = TransactionModel(
+      id: DateTime.now().microsecondsSinceEpoch,
+      type: TransactionType.expense,
+      category: "Mua goi cuoc data",
+      amount: amount,
+      description: "Mua goi cuoc data $mobileDataplan voi gia $amount VND cho thue bao $phoneNumber thanh cong!",
+      dateTime: DateTime.now()
+    );
+
+    fromWallet.withdraw(amount);
+    _transactionHistory.add(transaction);
+    print("[FINANCIAL_MANAGER::MOBILE_DATA] Mua goi cuoc data $mobileDataplan voi gia $amount VND cho thue bao $phoneNumber thanh cong!");
+    return true;
+  }
+  
+  void financialStatistic() {
+  print("\n=============================================");
+  print("          THONG KE TAI CHINH TOAN CUC       ");
+  print("=============================================");
+
+  // Tinh tong tai san
+  int totalBalance = 0;
+  for (var wallet in _walletLists) {
+    if (wallet.isActive) totalBalance += wallet.balance;
+  }
+  print(" Tong so du hien tai: $totalBalance VND");
+
+  // 2. Tinh tong thu / tong chi / thong ke hang muc chi tieu
+  int totalIncome = 0;
+  int totalExpense = 0;
+  Map<String, int> expenseByCategory = {};
+
+  for (var trans in _transactionHistory) {
+    if (trans.type == TransactionType.income) {
+      totalIncome += trans.amount;
+    } else if (trans.type == TransactionType.expense) {
+      totalExpense += trans.amount;
+      
+      // Gom nhom tien theo category
+      expenseByCategory[trans.category] = 
+          (expenseByCategory[trans.category] ?? 0) + trans.amount;
+    }
+  }
+
+  print(" Tong dong tien thu nhap: +$totalIncome VND");
+  print(" Tong dong tien chi tieu: -$totalExpense VND");
+  print("---------------------------------------------");
+  print(" CHI TIET CHI TIEU THEO HANG MUC:");
+  
+  if (expenseByCategory.isEmpty) {
+    print(" Chua co du lieu nao!");
+  } else {
+    expenseByCategory.forEach((category, amount) {
+      // Tinh phan tram dong gop cua tung hang muc
+      double percentage = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
+      print("  + $category: $amount VND (${percentage.toStringAsFixed(1)}%)");
+    });
+  }
+  print("=============================================\n");
+}
+
+  
   //----------------------------------------------------------------------//
   // Cac ham phu tro (helper function)
   //----------------------------------------------------------------------//
@@ -97,5 +195,10 @@ class FinancialManager {
       }
     }
     return index;
+  }
+
+  bool isValidVietnamesePhoneCredit(String phoneNumber) {
+    final RegExp phoneRegExp = RegExp(r'^(03|05|07|08|09)\d{8}$');
+    return phoneRegExp.hasMatch(phoneNumber);
   }
 }

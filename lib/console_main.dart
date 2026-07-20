@@ -1,8 +1,10 @@
 import 'dart:io';
-
+import 'dart:async';  // delay time
 
 void main() {
-  while (true) {
+
+  bool canExit = false;
+  while (!canExit) {
     print('---- Ung dung quan ly chi tieu 247ExpenTraker ----');
     print('1. Xem danh sach vi & Lich su giao dich');
     print('2. Thuc hien giao dich');
@@ -25,7 +27,10 @@ void main() {
         // Code thong ke tai chinh
         break;
       case '5':
-        // Code thoat khoi ung dung
+        // Code thoat khoi ung dung;
+        print("Dang thoat khoi ung dung...");
+        Future.delayed(Duration(seconds: 1));
+        canExit = true;
         break;
       default:
         print("Lua chon khong hop le!");
