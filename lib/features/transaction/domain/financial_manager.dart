@@ -109,6 +109,8 @@ class FinancialManager {
       id: DateTime.now().microsecondsSinceEpoch,
       type: TransactionType.transfer,
       category: "Giao dich chuyen tien",
+      fromWalletId: fromWalletID.toString(),
+      toWalletId: toWallet.toString(),
       amount: amount,
       description: description,
       dateTime: DateTime.now()
@@ -135,10 +137,15 @@ class FinancialManager {
     }
 
     final Wallet fromWallet = _walletLists[fromIndex];
+    if (!fromWallet.canWithdraw(amount)) {
+      print("[FINANCIAL_MANAGER::PHONE_TOPUP] Nap tien that bai do so du vi khong du!");
+      return false;
+    }
     final TransactionModel transaction = TransactionModel(
       id: DateTime.now().microsecondsSinceEpoch,
       type: TransactionType.expense,
       category: "Nap tien dien thoai",
+      fromWalletId: fromWalletID.toString(),
       amount: amount,
       description: "Nap $amount VND cho thue bao $phoneNumber",
       dateTime: DateTime.now()
@@ -159,7 +166,7 @@ class FinancialManager {
     }
 
     final Wallet fromWallet = _walletLists[fromIndex];
-
+    
     // Tim gia tien ung voi goi cuoc mobileDataplan
     int? amount = commonMobileDataPlan[mobileDataplan];
     if (amount == null) {
@@ -167,12 +174,18 @@ class FinancialManager {
       return false;
     }
 
+    if (!fromWallet.canWithdraw(amount)) {
+      print("[FINANCIAL_MANAGER::MOBILE_DATA] Mua goi cuoc that bai do so du vi khong du!");
+      return false;
+    }
+
     final TransactionModel transaction = TransactionModel(
       id: DateTime.now().microsecondsSinceEpoch,
       type: TransactionType.expense,
-      category: "Mua goi cuoc data",
+      category: "Mua goi cuoc Data",
+      fromWalletId: fromWalletID.toString(),
       amount: amount,
-      description: "Mua goi cuoc Data $isp $mobileDataplan voi gia $amount VND cho thue bao $phoneNumber thanh cong!",
+      description: "Mua goi cuoc Data ${isp.name.toUpperCase()} $mobileDataplan voi gia $amount VND cho thue bao $phoneNumber thanh cong!",
       dateTime: DateTime.now()
     );
 
