@@ -1,19 +1,22 @@
 import 'dart:io';
-import 'dart:async';  // delay time
 import 'package:expense_tracker/features/transaction/domain/financial_manager.dart';
+import 'package:expense_tracker/features/transaction/domain/master_wallet.dart';
 import 'package:expense_tracker/features/transaction/domain/mobile_data.dart';
 
 void main() {
 
   final manager = FinancialManager();
-  manager.createWallet("Tien mat", "Vi Sinh hoat", 2000000);
-  manager.createWallet("Ngan hang", "Hu Tiet kiem", 10000000);
+  MasterVault defaultAccount = MasterVault(
+    accountID: DateTime.now().microsecondsSinceEpoch.toString(), 
+    ownerName: "None", 
+    totalBalance: 0);
 
   bool canExit = false;
   while (!canExit) {
     print('\n==================================================');
     print('---- Ung dung quan ly chi tieu 247ExpenTraker ----');
     print('==================================================');
+    print('0. Cap nhat tai khoan chinh');
     print('1. Vi chi tieu & Lich su giao dich');
     print('2. Thuc hien giao dich (Chuyen tien nội bộ)');
     print('3. Nap tien dien thoai / Internet');
@@ -23,6 +26,15 @@ void main() {
 
     String? input = stdin.readLineSync();
     switch (input) {
+      case '0':
+        print('\n--- CAP_NHAT_TAI_KHOAN_CHINH ---');
+        stdout.write('Nhap ten chu so huu: ');
+        String name = stdin.readLineSync() ?? '';
+        stdout.write('Nhap so tien nap vao tai khoan chinh: ');
+        int amount = int.parse(stdin.readLineSync() ?? '0');
+
+        manager.updateMasterVaultInfo(defaultAccount, name, amount);
+        break;
       case '1':
         print('\n--- VI CHI TIEU & LICH SU GIAO DICH ---');
         print('1. Them vi chi tieu moi');
@@ -38,7 +50,7 @@ void main() {
           String category = stdin.readLineSync()?? '';
           stdout.write('Nhap so tien nap vao Vi chi tieu: ');
           int amount = int.parse(stdin.readLineSync() ?? '0');
-          manager.createWallet(name, category, amount);
+          manager.createWallet(defaultAccount, name, category, amount);
         } 
         
         else if (serviceChoice == '2') {
@@ -97,7 +109,7 @@ void main() {
         break;
 
       case '4':
-        manager.financialStatistic();
+        manager.financialStatistic(defaultAccount);
         break;
 
       case '5':

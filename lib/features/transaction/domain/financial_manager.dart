@@ -1,6 +1,7 @@
 import 'package:expense_tracker/features/transaction/domain/mobile_data.dart';
 import 'package:expense_tracker/features/transaction/domain/mp_wallet.dart';
 import 'package:expense_tracker/features/transaction/domain/transaction.dart';
+import 'package:expense_tracker/features/transaction/domain/master_wallet.dart';
 
 class FinancialManager {
   final List<Wallet> _walletLists = [];
@@ -15,12 +16,20 @@ class FinancialManager {
   // Cac thao tac tao, xoa, in danh sach cua walletList va transactionHistory //
   //--------------------------------------------------------------------------//
 
-  void createWallet(String newName, String newCategory, int initialBalance) {
+  bool createWallet(MasterVault vault, String newName, String newCategory, int initialBalance) {
     bool duplicateCategory = _walletLists.any((wallet) => wallet.category == newCategory);
     if (duplicateCategory) {
       print("[FINANCIAL_MANAGER::CREATE_WALLET] Vi co ten $newCategory da ton tai!");
-      return;
+      return false;
     }
+
+    // Kiem tra tong ngan sach cua _walletList co vuot qua totalBalance cua Master account hay khong
+    int currentTotalAllocated = _walletLists.fold(0, (sum, w) => sum + w.balance);
+    if (!vault.canAllocate(initialBalance, currentTotalAllocated)) {
+      print("[FINANCIAL_MANAGER::CREATE_WALLET::ERROR] Khong the tao vi! Tong ngan sach phan bo se vuot qua han muc Tai khoan chinh!");
+      return false;
+    }
+
     final newWallet = Wallet(
       id: DateTime.now().millisecondsSinceEpoch,
       category: newName,
@@ -28,7 +37,9 @@ class FinancialManager {
       isActive:  true
     );
     _walletLists.add(newWallet);
+
     print("[FINANCIAL_MANAGER::CREATE_WALLET] Khoi tao vi $newCategory, ID: ${newWallet.id} thanh cong!");
+    return true;
   }
 
   void deleteWallet(int deleteID) {
@@ -43,6 +54,9 @@ class FinancialManager {
 
   void showWalletList() 
   {
+    if (_walletLists.isEmpty) {
+      print("(Danh sach trong!)");
+    }
     print("DANH SACH VI CUA BAN");
     for (Wallet wallet in _walletLists) {
       wallet.showWalletInfo();
@@ -51,13 +65,25 @@ class FinancialManager {
 
   void showTransactionHistory() 
   {
+    if (_transactionHistory.isEmpty) {
+      print("(Danh sach trong!)");
+    }
     print("LICH SU GIAO DICH:");
     for (TransactionModel trans in _transactionHistory) {
       trans.showTransactionInfo();
     }
   }
  
- 
+  void updateMasterVaultInfo(MasterVault motherVault, String ownerName, int initialBalance) {
+    motherVault.ownerName = ownerName;
+    motherVault.totalBalance = initialBalance;
+    print("[FINANCIAL_MANAGER::MASTER_VAULT] Cap nhat thong tin Tai khoan chinh thanh cong!");
+
+    print("ID Tai khoan chinh: ${motherVault.accountID}");
+    print("Ten chu so huu: ${motherVault.ownerName}");
+    print("Tong han muc tai khoan: ${motherVault.totalBalance}");
+
+  }
   //----------------------------------------------------------------------------//
   // Cac phuong thuc nghiep vu: Giao dich, kiem ke, dich vu
   //----------------------------------------------------------------------------//
@@ -156,51 +182,56 @@ class FinancialManager {
     return true;
   }
   
-  void financialStatistic() {
-  print("\n=============================================");
-  print("          THONG KE TAI CHINH TOAN CUC       ");
-  print("=============================================");
+  void financialStatistic(MasterVault vault) {
 
-  // Tinh tong tai san
-  int totalBalance = 0;
-  for (var wallet in _walletLists) {
-    if (wallet.isActive) totalBalance += wallet.balance;
-  }
-  print(" Tong so du hien tai: $totalBalance VND");
+    bool isSystemHealthy = validateSystemIntegrity(vault);
+    print("\n=============================================");
+    print("          THONG KE TAI CHINH TOAN CUC       ");
+    print("=============================================");
 
-  // 2. Tinh tong thu / tong chi / thong ke hang muc chi tieu
-  int totalIncome = 0;
-  int totalExpense = 0;
-  Map<String, int> expenseByCategory = {};
+    print(" Trang thai tai khoan: ${isSystemHealthy ? "Can doi" : "Vuot han muc"}");
+    print(" Tong so tien Tai khoan chinh: ${vault.totalBalance} VND");
 
-  for (var trans in _transactionHistory) {
-    if (trans.type == TransactionType.income) {
-      totalIncome += trans.amount;
-    } else if (trans.type == TransactionType.expense) {
-      totalExpense += trans.amount;
-      
-      // Gom nhom tien theo category
-      expenseByCategory[trans.category] = 
-          (expenseByCategory[trans.category] ?? 0) + trans.amount;
+    // Tinh tong tien trong _walletList
+    int totalAllocated = _walletLists.fold(0, (sum, w) => sum + w.balance);
+    print(" Tong so tien da phan bo vao cac Vi: $totalAllocated VND");
+    print(" Han muc con trong co the cap phat: ${vault.totalBalance - totalAllocated} VND");
+    print("---------------------------------------------");
+
+    // 2. Tinh tong thu / tong chi / thong ke hang muc chi tieu
+    int totalIncome = 0;
+    int totalExpense = 0;
+    Map<String, int> expenseByCategory = {};
+
+    for (var trans in _transactionHistory) {
+      if (trans.type == TransactionType.income) {
+        totalIncome += trans.amount;
+      } else if (trans.type == TransactionType.expense) {
+        totalExpense += trans.amount;
+        
+        // Gom nhom tien theo category
+        expenseByCategory[trans.category] = 
+            (expenseByCategory[trans.category] ?? 0) + trans.amount;
+      }
     }
-  }
 
-  print(" Tong dong tien thu nhap: +$totalIncome VND");
-  print(" Tong dong tien chi tieu: -$totalExpense VND");
-  print("---------------------------------------------");
-  print(" CHI TIET CHI TIEU THEO HANG MUC:");
-  
-  if (expenseByCategory.isEmpty) {
-    print(" Chua co du lieu nao!");
-  } else {
-    expenseByCategory.forEach((category, amount) {
-      // Tinh phan tram dong gop cua tung hang muc
-      double percentage = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
-      print("  + $category: $amount VND (${percentage.toStringAsFixed(1)}%)");
-    });
+    print(" Tong dong tien thu nhap: +$totalIncome VND");
+    print(" Tong dong tien chi tieu: -$totalExpense VND");
+    print("---------------------------------------------");
+    print(" CHI TIET CHI TIEU THEO HANG MUC:");
+    
+    if (expenseByCategory.isEmpty) {
+      print(" Chua co du lieu nao!");
+    } 
+    else {
+      expenseByCategory.forEach((category, amount) {
+        // Tinh phan tram dong gop cua tung hang muc
+        double percentage = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
+        print("  + $category: $amount VND (${percentage.toStringAsFixed(1)}%)");
+      });
+    }
+    print("=============================================\n");
   }
-  print("=============================================\n");
-}
 
   
   //----------------------------------------------------------------------//
@@ -222,4 +253,15 @@ class FinancialManager {
     final RegExp phoneRegExp = RegExp(r'^(03|05|07|08|09)\d{8}$');
     return phoneRegExp.hasMatch(phoneNumber);
   }
+
+  bool validateSystemIntegrity(MasterVault vault) {
+  int totalInSubWallets = _walletLists.fold(0, (sum, w) => sum + w.balance);
+  
+  // Tổng tiền trong các ví chi tiêu KHÔNG ĐƯỢC VƯỢT QUÁ tổng tiền Ví Mẹ
+  if (totalInSubWallets > vault.totalBalance) {
+    print("[CRITICAL ERROR] Tổng tiền các ví phụ ($totalInSubWallets) vượt quá Tài khoản chính (${vault.totalBalance})!");
+    return false;
+  }
+  return true;
+}
 }
