@@ -110,7 +110,7 @@ class FinancialManager {
       type: TransactionType.transfer,
       category: "Giao dich chuyen tien",
       fromWalletId: fromWalletID.toString(),
-      toWalletId: toWallet.toString(),
+      toWalletId: toWalletID.toString(),
       amount: amount,
       description: description,
       dateTime: DateTime.now()
