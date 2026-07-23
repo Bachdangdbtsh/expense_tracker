@@ -1,4 +1,5 @@
 // Thuc hien tat ca cac thao tac: Chuyen tien, nhan tien, luan chuyen giua cac wallet
+import 'dart:developer' as dev;
 
 enum TransactionType {
   expense,
@@ -27,8 +28,9 @@ class TransactionModel {
   });
 
   void showTransactionInfo() {
-    print("-------------------------------");
-    print("($dateTime) - Ma giao dich: $id. Ma vi nguon: $fromWalletId. Ma vi thu huong: $toWalletId");
-    print("So tien giao dich: $amount VND. Mo ta giao dich: $description. Phan loai chi tieu: $category");
+    dev.log(
+      '-------------------------------\n($dateTime) - Ma giao dich: $id. Ma vi nguon: $fromWalletId. Ma vi thu huong: $toWalletId\nSo tien giao dich: $amount VND. Mo ta giao dich: $description. Phan loai chi tieu: $category',
+      name: 'TRANSACTION::SHOW_INFO'
+    );
   }
 }

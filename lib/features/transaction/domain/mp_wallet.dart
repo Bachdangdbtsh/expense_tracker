@@ -1,3 +1,6 @@
+import 'dart:developer' as dev;
+
+import 'package:expense_tracker/core/errors/financial_manager_exceptions.dart';
 class Wallet {
   final int id;  // ID duy nhat cua 1 vi (1 vi = 1 muc dich tieu dung) 
   String category;  // muc dich su dung vi
@@ -20,28 +23,33 @@ class Wallet {
   void withdraw(int amount) {
     if (canWithdraw(amount)) {
       balance -= amount;
-      print("[WALLET::WITHDRAW] (Wallet ID: $id): Rut $amount VND thanh cong!");
-      print("Current balance: $balance");
-    } else {
-      print("[WALLET::WITHDRAW] (Wallet ID: $id): Rut tien khong thanh cong! Vui long nap them tien!");
+      dev.log(
+        '(Wallet ID: $id): Rut $amount VND thanh cong!\nCurrent balance: $balance',
+        name: 'WALLET::WITHDRAW'
+      );
+    } 
+    else {
+      throw ExceedBalanceException();
     }
   }
 
   void deposit(int amount) {
     if (isActive) {
       balance += amount;
-      print("[WALLET::DEPOSIT] (WalleT's ID: $id): Nap $amount VND thanh cong!");
-      print("Current balance: $balance");
-    } else {
-      print("[WALLER::DEPOSIT] (Wallet's ID: $id): Nap tien khong thanh cong! Vi hien tai khong hoat dong!");
+      dev.log(
+        '(WalleT\'s ID: $id): Nap $amount VND thanh cong! \nCurrent balance: $balance',
+        name: 'WALLET::WITHDRAW'
+      );
+    } 
+    else {
+      throw InactiveWalletException();
     }
   }
 
   void showWalletInfo() {
-    print("-------------------------------");
-    print("Ma so Id: $id");
-    print("Phan loai chi tieu: $category");
-    print("So du hien tai: $balance (VND)");
-    print("Trang thai hoat dong: ${isActive? "Con hoat dong" : "Ngung hoat dong"}");
+    dev.log(
+      '-------------------------------\nPhan loai chi tieu: $category\nSo du hien tai: $balance (VND)\nTrang thai hoat dong: ${isActive? "Con hoat dong" : "Ngung hoat dong"}',
+      name: 'WALLET::SHOW_INFO'
+    );
   }
 }

@@ -1,7 +1,9 @@
+import 'package:expense_tracker/core/errors/financial_manager_exceptions.dart';
 import 'package:expense_tracker/features/transaction/domain/mobile_data.dart';
 import 'package:expense_tracker/features/transaction/domain/mp_wallet.dart';
 import 'package:expense_tracker/features/transaction/domain/transaction.dart';
 import 'package:expense_tracker/features/transaction/domain/master_wallet.dart';
+import 'dart:developer' as dev;
 
 class FinancialManager {
   final List<Wallet> _walletLists = [];
@@ -19,15 +21,13 @@ class FinancialManager {
   bool createWallet(MasterVault vault, String newName, String newCategory, int initialBalance) {
     bool duplicateCategory = _walletLists.any((wallet) => wallet.category == newCategory);
     if (duplicateCategory) {
-      print("[FINANCIAL_MANAGER::CREATE_WALLET] Vi co ten $newCategory da ton tai!");
-      return false;
+      throw WalletExistedException();
     }
 
     // Kiem tra tong ngan sach cua _walletList co vuot qua totalBalance cua Master account hay khong
     int currentTotalAllocated = _walletLists.fold(0, (sum, w) => sum + w.balance);
     if (!vault.canAllocate(initialBalance, currentTotalAllocated)) {
-      print("[FINANCIAL_MANAGER::CREATE_WALLET::ERROR] Khong the tao vi! Tong ngan sach phan bo se vuot qua han muc Tai khoan chinh!");
-      return false;
+      throw ExceedMasterVaultLimitException();
     }
 
     final newWallet = Wallet(
@@ -38,26 +38,40 @@ class FinancialManager {
     );
     _walletLists.add(newWallet);
 
-    print("[FINANCIAL_MANAGER::CREATE_WALLET] Khoi tao vi $newCategory, ID: ${newWallet.id} thanh cong!");
+    dev.log(
+      'Khoi tao vi $newCategory, ID: ${newWallet.id} thanh cong!',
+      name: 'FINANCIAL_MANAGER::CREATE_WALLET'
+    );
     return true;
   }
 
   void deleteWallet(int deleteID) {
     int index = searchWalletIndex(deleteID);
     if (index != -1) {
-      print("[FINANCIAL_MANAGER::DELETE_WALLET] Xoa vi ${_walletLists[index].category}, ID: ${_walletLists[index].id} thanh cong!");
+      dev.log(
+        'Xoa vi ${_walletLists[index].category}, ID: ${_walletLists[index].id} thanh cong!',
+        name: 'FINANCIAL_MANAGER::DELETE_WALLET'
+      );
       _walletLists.removeAt(index);
-    } else {
-      print ("[FINANCIAL_MANAGER::DELETE_WALLET] Vi co ten ${_walletLists[index].category} khong ton tai!");
+    } 
+    else {
+      throw WalletNotFoundException();
     }
   }
 
   void showWalletList() 
   {
     if (_walletLists.isEmpty) {
-      print("(Danh sach trong!)");
+      dev.log(
+        'Danh sach trong!',
+        name: 'FINANCIAL_MANAGER::SHOW_WALLET_LIST'
+      );
     }
-    print("DANH SACH VI CUA BAN");
+    
+    dev.log(
+      'DANH SACH VI CUA BAN',
+      name: 'FINANCIAL_MANAGER::SHOW_WALLET_LIST'
+    );
     for (Wallet wallet in _walletLists) {
       wallet.showWalletInfo();
     }
@@ -66,9 +80,15 @@ class FinancialManager {
   void showTransactionHistory() 
   {
     if (_transactionHistory.isEmpty) {
-      print("(Danh sach trong!)");
+      dev.log(
+        'Danh sach trong!',
+        name: 'FINANCIAL_MANAGER::SHOW_TRANSACTION_HISTORY'
+      );
     }
-    print("LICH SU GIAO DICH:");
+    dev.log(
+        'LICH SU GIAO DICH',
+        name: 'FINANCIAL_MANAGER::SHOW_TRANSACTION_HISTORY'
+      );
     for (TransactionModel trans in _transactionHistory) {
       trans.showTransactionInfo();
     }
@@ -77,13 +97,17 @@ class FinancialManager {
   void updateMasterVaultInfo(MasterVault motherVault, String ownerName, int initialBalance) {
     motherVault.ownerName = ownerName;
     motherVault.totalBalance = initialBalance;
-    print("[FINANCIAL_MANAGER::MASTER_VAULT] Cap nhat thong tin Tai khoan chinh thanh cong!");
+    dev.log(
+      'Cap nhat thong tin Tai khoan chinh thanh cong!',
+      name: 'FINANCIAL_MANAGER::MASTER_VAULT'
+    );
 
-    print("ID Tai khoan chinh: ${motherVault.accountID}");
-    print("Ten chu so huu: ${motherVault.ownerName}");
-    print("Tong han muc tai khoan: ${motherVault.totalBalance}");
-
+    dev.log(
+      'ID Tai khoan chinh: ${motherVault.accountID} \n Ten chu so huu: ${motherVault.ownerName} \n Tong han muc tai khoan: ${motherVault.totalBalance}',
+      name: 'FINANCIAL_MANAGER::MASTER_VAULT'
+    );
   }
+
   //----------------------------------------------------------------------------//
   // Cac phuong thuc nghiep vu: Giao dich, kiem ke, dich vu
   //----------------------------------------------------------------------------//
@@ -92,17 +116,14 @@ class FinancialManager {
     int fromIndex = searchWalletIndex(fromWalletID);
     int toIndex = searchWalletIndex(toWalletID);
 
-    if (fromIndex == -1 || toIndex == -1) {
-      print("[FINANCIAL_MANAGER::TRANSFER] Giao dich that bai. Khong tim thay ID vi nguon hoac vi dich!");
-      return false;
-    }
+    if (fromIndex == -1) throw WalletNotFoundException();
+    if (toIndex == -1) throw WalletNotFoundException();
 
     final Wallet fromWallet = _walletLists[fromIndex];
     final Wallet toWallet = _walletLists[toIndex];
 
     if (!fromWallet.canWithdraw(amount)) {
-      print("[FINANCIAL_MANAGER::TRANSFER] Giao dich that bai do STK nguon khong du so du!");
-      return false;
+      throw ExceedBalanceException();
     }
 
     final TransactionModel transaction = TransactionModel(
@@ -119,28 +140,24 @@ class FinancialManager {
     fromWallet.withdraw(amount);
     toWallet.deposit(amount);
     _transactionHistory.add(transaction);
-    print("[FINANCIAL_MANAGER::TRANSFER] Chuyen $amount VND tu vi ${fromWallet.category} sang vi ${toWallet.category} thanh cong!");
+    dev.log(
+      'Chuyen $amount VND tu vi ${fromWallet.category} sang vi ${toWallet.category} thanh cong!',
+      name: 'FINANCIAL_MANAGER::TRANSFER'
+    );
     return true;
   }
 
   bool topUpPhoneCredit(int fromWalletID, int amount, String phoneNumber) {
     if (!isValidVietnamesePhoneCredit(phoneNumber)) {
-      print("[FINANCIAL::PHONE_TOPUP] So thue bao $phoneNumber khong hop le de nap tien!");
-      return false;
+      throw PhoneNumberNotFoundException();
     }
     
     int fromIndex = searchWalletIndex(fromWalletID);
-
-    if (fromIndex == -1 ) {
-      print("[FINANCIAL_MANAGER::PHONE_TOPUP] Giao dich that bai. Khong tim thay ID vi nguon!");
-      return false;
-    }
+    if (fromIndex == -1 ) throw WalletNotFoundException();
 
     final Wallet fromWallet = _walletLists[fromIndex];
-    if (!fromWallet.canWithdraw(amount)) {
-      print("[FINANCIAL_MANAGER::PHONE_TOPUP] Nap tien that bai do so du vi khong du!");
-      return false;
-    }
+    if (!fromWallet.canWithdraw(amount)) throw ExceedBalanceException();
+
     final TransactionModel transaction = TransactionModel(
       id: DateTime.now().microsecondsSinceEpoch,
       type: TransactionType.expense,
@@ -153,30 +170,26 @@ class FinancialManager {
 
     fromWallet.withdraw(amount);
     _transactionHistory.add(transaction);
-    print("[FINANCIAL_MANAGER::PHONE_TOPUP] Nap $amount VND cho so $phoneNumber thanh cong tu vi ${fromWallet.category}!");
+    dev.log(
+      'Nap $amount VND cho so $phoneNumber thanh cong tu vi ${fromWallet.category}!',
+      name: 'FINANCIAL_MANAGER::TOPUP'
+    );
     return true;
   }
   
   bool purchaseMobileData(int fromWalletID, InternetServiceProvider isp, String mobileDataplan, String phoneNumber) {
-    int fromIndex = searchWalletIndex(fromWalletID);
 
-    if (fromIndex == -1 ) {
-      print("[FINANCIAL_MANAGER::MOBILE_DATA] Giao dich that bai. Khong tim thay ID vi nguon!");
-      return false;
-    }
+    int fromIndex = searchWalletIndex(fromWalletID);
+    if (fromIndex == -1 ) throw WalletNotFoundException();
 
     final Wallet fromWallet = _walletLists[fromIndex];
     
     // Tim gia tien ung voi goi cuoc mobileDataplan
     int? amount = commonMobileDataPlan[mobileDataplan];
-    if (amount == null) {
-      print("[FINANCIAL_MANAGER::MOBILE_DATA] Goi cuoc data $mobileDataplan khong kha dung!");
-      return false;
-    }
+    if (amount == null) throw InvalidDataPackageException();
 
     if (!fromWallet.canWithdraw(amount)) {
-      print("[FINANCIAL_MANAGER::MOBILE_DATA] Mua goi cuoc that bai do so du vi khong du!");
-      return false;
+      throw ExceedBalanceException();
     }
 
     final TransactionModel transaction = TransactionModel(
@@ -191,25 +204,37 @@ class FinancialManager {
 
     fromWallet.withdraw(amount);
     _transactionHistory.add(transaction);
-    print("[FINANCIAL_MANAGER::MOBILE_DATA] Mua goi cuoc data $mobileDataplan tri gia $amount VND cho thue bao $phoneNumber thanh cong!");
+    dev.log(
+      'Mua goi cuoc data $mobileDataplan tri gia $amount VND cho thue bao $phoneNumber thanh cong!',
+      name: 'FINANCIAL_MANAGER::MOBILE_DATA'
+    );
     return true;
   }
   
   void financialStatistic(MasterVault vault) {
 
     bool isSystemHealthy = validateSystemIntegrity(vault);
-    print("\n=============================================");
-    print("          THONG KE TAI CHINH TOAN CUC       ");
-    print("=============================================");
+    dev.log(
+      '\n============================================= \n          THONG KE TAI CHINH TOAN CUC       \n=============================================' ,
+      name: 'FINANCIAL_MANAGER::STATISTIC'
+    );
 
-    print(" Trang thai tai khoan: ${isSystemHealthy ? "Can doi" : "Vuot han muc"}");
-    print(" Tong so tien Tai khoan chinh: ${vault.totalBalance} VND");
+    dev.log(
+      ' Trang thai tai khoan: ${isSystemHealthy ? "Can doi" : "Vuot han muc"} \n  Tong so tien Tai khoan chinh: ${vault.totalBalance} VND' ,
+      name: 'FINANCIAL_MANAGER::STATISTIC'
+    );
 
     // Tinh tong tien trong _walletList
     int totalAllocated = _walletLists.fold(0, (sum, w) => sum + w.balance);
-    print(" Tong so tien da phan bo vao cac Vi: $totalAllocated VND");
-    print(" Han muc con trong co the cap phat: ${vault.totalBalance - totalAllocated} VND");
-    print("---------------------------------------------");
+    
+    dev.log(
+      ' Tong so tien da phan bo vao cac Vi: $totalAllocated VND \n  Han muc con trong co the cap phat: ${vault.totalBalance - totalAllocated} VND' ,
+      name: 'FINANCIAL_MANAGER::STATISTIC'
+    );
+    dev.log(
+      '---------------------------------------------' ,
+      name: 'FINANCIAL_MANAGER::STATISTIC'
+    );
 
     // 2. Tinh tong thu / tong chi / thong ke hang muc chi tieu
     int totalIncome = 0;
@@ -228,22 +253,38 @@ class FinancialManager {
       }
     }
 
-    print(" Tong dong tien thu nhap: +$totalIncome VND");
-    print(" Tong dong tien chi tieu: -$totalExpense VND");
-    print("---------------------------------------------");
-    print(" CHI TIET CHI TIEU THEO HANG MUC:");
+    dev.log(
+      'Tong dong tien thu nhap: +$totalIncome VND\n Tong dong tien chi tieu: -$totalExpense VND',
+      name: 'FINANCIAL_MANAGER::STATISTIC'
+    );
+
+    dev.log(
+      '---------------------------------------------\n CHI TIET CHI TIEU THEO HANG MUC:',
+      name: 'FINANCIAL_MANAGER::STATISTIC'
+    );
     
     if (expenseByCategory.isEmpty) {
-      print(" Chua co du lieu nao!");
+      dev.log(
+        ' Chua co du lieu nao!',
+        name: 'FINANCIAL_MANAGER::STATISTIC'
+      );
     } 
     else {
       expenseByCategory.forEach((category, amount) {
         // Tinh phan tram dong gop cua tung hang muc
         double percentage = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
-        print("  + $category: $amount VND (${percentage.toStringAsFixed(1)}%)");
+        dev.log(
+          '   + $category: $amount VND (${percentage.toStringAsFixed(1)}%)',
+          name: 'FINANCIAL_MANAGER::STATISTIC'
+        );
+
       });
     }
-    print("=============================================\n");
+
+    dev.log(
+      '=============================================\n',
+      name: 'FINANCIAL_MANAGER::STATISTIC'
+    );
   }
 
   
@@ -268,13 +309,12 @@ class FinancialManager {
   }
 
   bool validateSystemIntegrity(MasterVault vault) {
-  int totalInSubWallets = _walletLists.fold(0, (sum, w) => sum + w.balance);
-  
-  // Tổng tiền trong các ví chi tiêu KHÔNG ĐƯỢC VƯỢT QUÁ tổng tiền Ví Mẹ
-  if (totalInSubWallets > vault.totalBalance) {
-    print("[CRITICAL ERROR] Tổng tiền các ví phụ ($totalInSubWallets) vượt quá Tài khoản chính (${vault.totalBalance})!");
-    return false;
+    int totalInSubWallets = _walletLists.fold(0, (sum, w) => sum + w.balance);
+    
+    // Tổng tiền trong các ví chi tiêu KHÔNG ĐƯỢC VƯỢT QUÁ tổng tiền Ví Mẹ
+    if (totalInSubWallets > vault.totalBalance) {
+      throw ExceedMasterVaultLimitException();
+    }
+    return true;
   }
-  return true;
-}
 }
