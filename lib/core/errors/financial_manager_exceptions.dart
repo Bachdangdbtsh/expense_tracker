@@ -35,10 +35,10 @@ class PhoneNumberNotFoundException extends FinancialManagerExceptions {
 
 class InvalidDataPackageException extends FinancialManagerExceptions {
   InvalidDataPackageException([super.message = "Goi cuoc du lieu di dong khong hop le!"]) 
-    : super(errorCode: "EXCEED_BALANCE_LIMIT");
+    : super(errorCode: "INVALID_DATA_PACKAGE");
 }
 
 class InactiveWalletException extends FinancialManagerExceptions {
   InactiveWalletException([super.message = "Vi khong hoat dong!"]) 
-    : super(errorCode: "EXCEED_BALANCE_LIMIT");
+    : super(errorCode: "INACTIVE_WALLET");
 }

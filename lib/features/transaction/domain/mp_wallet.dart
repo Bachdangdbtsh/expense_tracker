@@ -45,11 +45,4 @@ class Wallet {
       throw InactiveWalletException();
     }
   }
-
-  void showWalletInfo() {
-    dev.log(
-      '-------------------------------\nPhan loai chi tieu: $category\nSo du hien tai: $balance (VND)\nTrang thai hoat dong: ${isActive? "Con hoat dong" : "Ngung hoat dong"}',
-      name: 'WALLET::SHOW_INFO'
-    );
-  }
 }

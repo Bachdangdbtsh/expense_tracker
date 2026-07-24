@@ -26,11 +26,4 @@ class TransactionModel {
     required this.description,
     required this.dateTime
   });
-
-  void showTransactionInfo() {
-    dev.log(
-      '-------------------------------\n($dateTime) - Ma giao dich: $id. Ma vi nguon: $fromWalletId. Ma vi thu huong: $toWalletId\nSo tien giao dich: $amount VND. Mo ta giao dich: $description. Phan loai chi tieu: $category',
-      name: 'TRANSACTION::SHOW_INFO'
-    );
-  }
 }

@@ -1,4 +1,5 @@
 import 'package:expense_tracker/core/errors/financial_manager_exceptions.dart';
+import 'package:expense_tracker/features/transaction/domain/financial_statistic.dart';
 import 'package:expense_tracker/features/transaction/domain/mobile_data.dart';
 import 'package:expense_tracker/features/transaction/domain/mp_wallet.dart';
 import 'package:expense_tracker/features/transaction/domain/transaction.dart';
@@ -56,41 +57,6 @@ class FinancialManager {
     } 
     else {
       throw WalletNotFoundException();
-    }
-  }
-
-  void showWalletList() 
-  {
-    if (_walletLists.isEmpty) {
-      dev.log(
-        'Danh sach trong!',
-        name: 'FINANCIAL_MANAGER::SHOW_WALLET_LIST'
-      );
-    }
-    
-    dev.log(
-      'DANH SACH VI CUA BAN',
-      name: 'FINANCIAL_MANAGER::SHOW_WALLET_LIST'
-    );
-    for (Wallet wallet in _walletLists) {
-      wallet.showWalletInfo();
-    }
-  }
-
-  void showTransactionHistory() 
-  {
-    if (_transactionHistory.isEmpty) {
-      dev.log(
-        'Danh sach trong!',
-        name: 'FINANCIAL_MANAGER::SHOW_TRANSACTION_HISTORY'
-      );
-    }
-    dev.log(
-        'LICH SU GIAO DICH',
-        name: 'FINANCIAL_MANAGER::SHOW_TRANSACTION_HISTORY'
-      );
-    for (TransactionModel trans in _transactionHistory) {
-      trans.showTransactionInfo();
     }
   }
  
@@ -211,79 +177,33 @@ class FinancialManager {
     return true;
   }
   
-  void financialStatistic(MasterVault vault) {
-
-    bool isSystemHealthy = validateSystemIntegrity(vault);
-    dev.log(
-      '\n============================================= \n          THONG KE TAI CHINH TOAN CUC       \n=============================================' ,
-      name: 'FINANCIAL_MANAGER::STATISTIC'
-    );
-
-    dev.log(
-      ' Trang thai tai khoan: ${isSystemHealthy ? "Can doi" : "Vuot han muc"} \n  Tong so tien Tai khoan chinh: ${vault.totalBalance} VND' ,
-      name: 'FINANCIAL_MANAGER::STATISTIC'
-    );
-
-    // Tinh tong tien trong _walletList
+  FinancialStatistic financialStatistic(MasterVault vault) {
+    bool accountCondition = validateSystemIntegrity(vault);
     int totalAllocated = _walletLists.fold(0, (sum, w) => sum + w.balance);
-    
-    dev.log(
-      ' Tong so tien da phan bo vao cac Vi: $totalAllocated VND \n  Han muc con trong co the cap phat: ${vault.totalBalance - totalAllocated} VND' ,
-      name: 'FINANCIAL_MANAGER::STATISTIC'
-    );
-    dev.log(
-      '---------------------------------------------' ,
-      name: 'FINANCIAL_MANAGER::STATISTIC'
-    );
-
-    // 2. Tinh tong thu / tong chi / thong ke hang muc chi tieu
     int totalIncome = 0;
     int totalExpense = 0;
-    Map<String, int> expenseByCategory = {};
+    Map<String, int> expenseSortedByCategory = {};
 
     for (var trans in _transactionHistory) {
       if (trans.type == TransactionType.income) {
         totalIncome += trans.amount;
-      } else if (trans.type == TransactionType.expense) {
+      } 
+      else if (trans.type == TransactionType.expense) {
         totalExpense += trans.amount;
         
         // Gom nhom tien theo category
-        expenseByCategory[trans.category] = 
-            (expenseByCategory[trans.category] ?? 0) + trans.amount;
+        expenseSortedByCategory[trans.category] = (expenseSortedByCategory[trans.category] ?? 0) + trans.amount;
       }
     }
-
-    dev.log(
-      'Tong dong tien thu nhap: +$totalIncome VND\n Tong dong tien chi tieu: -$totalExpense VND',
-      name: 'FINANCIAL_MANAGER::STATISTIC'
-    );
-
-    dev.log(
-      '---------------------------------------------\n CHI TIET CHI TIEU THEO HANG MUC:',
-      name: 'FINANCIAL_MANAGER::STATISTIC'
-    );
     
-    if (expenseByCategory.isEmpty) {
-      dev.log(
-        ' Chua co du lieu nao!',
-        name: 'FINANCIAL_MANAGER::STATISTIC'
-      );
-    } 
-    else {
-      expenseByCategory.forEach((category, amount) {
-        // Tinh phan tram dong gop cua tung hang muc
-        double percentage = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
-        dev.log(
-          '   + $category: $amount VND (${percentage.toStringAsFixed(1)}%)',
-          name: 'FINANCIAL_MANAGER::STATISTIC'
-        );
-
-      });
-    }
-
-    dev.log(
-      '=============================================\n',
-      name: 'FINANCIAL_MANAGER::STATISTIC'
+    return FinancialStatistic(
+      isAccountSafe: accountCondition,
+      totalMasterBalance: vault.totalBalance,
+      totalAllocated: totalAllocated,
+      remainingBudget: vault.totalBalance - totalAllocated,
+      totalIncome: totalIncome,
+      totalExpense: totalExpense,
+      expenseByCategory: expenseSortedByCategory,
     );
   }
 
@@ -311,7 +231,6 @@ class FinancialManager {
   bool validateSystemIntegrity(MasterVault vault) {
     int totalInSubWallets = _walletLists.fold(0, (sum, w) => sum + w.balance);
     
-    // Tổng tiền trong các ví chi tiêu KHÔNG ĐƯỢC VƯỢT QUÁ tổng tiền Ví Mẹ
     if (totalInSubWallets > vault.totalBalance) {
       throw ExceedMasterVaultLimitException();
     }
