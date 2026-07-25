@@ -1,4 +1,5 @@
 import 'package:expense_tracker/core/errors/financial_manager_exceptions.dart';
+import 'package:expense_tracker/core/utils/local_storage_service.dart';
 import 'package:expense_tracker/features/transaction/domain/financial_statistic.dart';
 import 'package:expense_tracker/features/transaction/domain/mobile_data.dart';
 import 'package:expense_tracker/features/transaction/domain/mp_wallet.dart';
@@ -9,17 +10,49 @@ import 'dart:developer' as dev;
 class FinancialManager {
   final List<Wallet> _walletLists = [];
   final List<TransactionModel> _transactionHistory = [];
+  final LocalStorageService _storageService = LocalStorageService();
 
   // Getters
   List<Wallet> get wallet => _walletLists;
   List<TransactionModel> get transHistory => _transactionHistory;
+
+  Future<MasterVault?> initData() async {
+    final data = await _storageService.loadData();
+    if (data == null) return null; // App mới chưa có dữ liệu
+
+    // ap lai danh sach vi
+    _walletLists.clear();
+    final List<dynamic> walletsJson = data['wallets'];
+    for (var item in walletsJson) {
+      _walletLists.add(Wallet.fromMap(item));
+    }
+
+    // Nap lai lich su giao dich
+    _transactionHistory.clear();
+    final List<dynamic> transJson = data['transactions'];
+    for (var item in transJson) {
+      _transactionHistory.add(TransactionModel.fromMap(item));
+    }
+
+    // Nạp lại Master Vault
+    return MasterVault.fromMap(data['masterVault']);
+  }
+
+  // 2. Hàm hỗ trợ lưu State hiện tại xuống ổ cứng
+  Future<void> _autoSave(MasterVault vault) async {
+    await _storageService.saveData(
+      masterVaultMap: vault.toMap(),
+      walletListMaps: _walletLists.map((w) => w.toMap()).toList(),
+      transactionListMaps: _transactionHistory.map((t) => t.toMap()).toList(),
+    );
+  }
   
 
   //--------------------------------------------------------------------------//
   // Cac thao tac tao, xoa, in danh sach cua walletList va transactionHistory //
   //--------------------------------------------------------------------------//
 
-  bool createWallet(MasterVault vault, String newName, String newCategory, int initialBalance) {
+  Future<bool> createWallet(MasterVault vault, String newName, String newCategory, int initialBalance) async{
     bool duplicateCategory = _walletLists.any((wallet) => wallet.category == newCategory);
     if (duplicateCategory) {
       throw WalletExistedException();
@@ -32,13 +65,14 @@ class FinancialManager {
     }
 
     final newWallet = Wallet(
-      id: DateTime.now().millisecondsSinceEpoch,
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       category: newName,
       balance: initialBalance,
       isActive:  true
     );
     _walletLists.add(newWallet);
 
+    await _autoSave(vault);
     dev.log(
       'Khoi tao vi $newCategory, ID: ${newWallet.id} thanh cong!',
       name: 'FINANCIAL_MANAGER::CREATE_WALLET'
@@ -46,7 +80,7 @@ class FinancialManager {
     return true;
   }
 
-  void deleteWallet(int deleteID) {
+  Future<void> deleteWallet(MasterVault vault,  deleteID) async {
     int index = searchWalletIndex(deleteID);
     if (index != -1) {
       dev.log(
@@ -54,13 +88,15 @@ class FinancialManager {
         name: 'FINANCIAL_MANAGER::DELETE_WALLET'
       );
       _walletLists.removeAt(index);
+      await _autoSave(vault);
+
     } 
     else {
       throw WalletNotFoundException();
     }
   }
  
-  void updateMasterVaultInfo(MasterVault motherVault, String ownerName, int initialBalance) {
+  Future<void> updateMasterVaultInfo(MasterVault motherVault, String ownerName, int initialBalance) async{
     motherVault.ownerName = ownerName;
     motherVault.totalBalance = initialBalance;
     dev.log(
@@ -68,6 +104,7 @@ class FinancialManager {
       name: 'FINANCIAL_MANAGER::MASTER_VAULT'
     );
 
+    await _autoSave(motherVault);
     dev.log(
       'ID Tai khoan chinh: ${motherVault.accountID} \n Ten chu so huu: ${motherVault.ownerName} \n Tong han muc tai khoan: ${motherVault.totalBalance}',
       name: 'FINANCIAL_MANAGER::MASTER_VAULT'
@@ -78,7 +115,7 @@ class FinancialManager {
   // Cac phuong thuc nghiep vu: Giao dich, kiem ke, dich vu
   //----------------------------------------------------------------------------//
 
-  bool transferMoney(int fromWalletID, int toWalletID, int amount, String description) {
+  Future<bool> transferMoney(MasterVault vault, String fromWalletID, String toWalletID, int amount, String description) async{
     int fromIndex = searchWalletIndex(fromWalletID);
     int toIndex = searchWalletIndex(toWalletID);
 
@@ -93,7 +130,7 @@ class FinancialManager {
     }
 
     final TransactionModel transaction = TransactionModel(
-      id: DateTime.now().microsecondsSinceEpoch,
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
       type: TransactionType.transfer,
       category: "Giao dich chuyen tien",
       fromWalletId: fromWalletID.toString(),
@@ -106,6 +143,8 @@ class FinancialManager {
     fromWallet.withdraw(amount);
     toWallet.deposit(amount);
     _transactionHistory.add(transaction);
+
+    await _autoSave(vault);
     dev.log(
       'Chuyen $amount VND tu vi ${fromWallet.category} sang vi ${toWallet.category} thanh cong!',
       name: 'FINANCIAL_MANAGER::TRANSFER'
@@ -113,7 +152,7 @@ class FinancialManager {
     return true;
   }
 
-  bool topUpPhoneCredit(int fromWalletID, int amount, String phoneNumber) {
+  Future<bool> topUpPhoneCredit(MasterVault vault, String fromWalletID, int amount, String phoneNumber) async {
     if (!isValidVietnamesePhoneCredit(phoneNumber)) {
       throw PhoneNumberNotFoundException();
     }
@@ -125,7 +164,7 @@ class FinancialManager {
     if (!fromWallet.canWithdraw(amount)) throw ExceedBalanceException();
 
     final TransactionModel transaction = TransactionModel(
-      id: DateTime.now().microsecondsSinceEpoch,
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
       type: TransactionType.expense,
       category: "Nap tien dien thoai",
       fromWalletId: fromWalletID.toString(),
@@ -136,6 +175,8 @@ class FinancialManager {
 
     fromWallet.withdraw(amount);
     _transactionHistory.add(transaction);
+
+    await _autoSave(vault);
     dev.log(
       'Nap $amount VND cho so $phoneNumber thanh cong tu vi ${fromWallet.category}!',
       name: 'FINANCIAL_MANAGER::TOPUP'
@@ -143,7 +184,7 @@ class FinancialManager {
     return true;
   }
   
-  bool purchaseMobileData(int fromWalletID, InternetServiceProvider isp, String mobileDataplan, String phoneNumber) {
+  Future<bool> purchaseMobileData(MasterVault vault, String fromWalletID, InternetServiceProvider isp, String mobileDataplan, String phoneNumber) async {
 
     int fromIndex = searchWalletIndex(fromWalletID);
     if (fromIndex == -1 ) throw WalletNotFoundException();
@@ -159,7 +200,7 @@ class FinancialManager {
     }
 
     final TransactionModel transaction = TransactionModel(
-      id: DateTime.now().microsecondsSinceEpoch,
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
       type: TransactionType.expense,
       category: "Mua goi cuoc Data",
       fromWalletId: fromWalletID.toString(),
@@ -170,6 +211,8 @@ class FinancialManager {
 
     fromWallet.withdraw(amount);
     _transactionHistory.add(transaction);
+
+    await _autoSave(vault);
     dev.log(
       'Mua goi cuoc data $mobileDataplan tri gia $amount VND cho thue bao $phoneNumber thanh cong!',
       name: 'FINANCIAL_MANAGER::MOBILE_DATA'
@@ -212,7 +255,7 @@ class FinancialManager {
   // Cac ham phu tro (helper function)
   //----------------------------------------------------------------------//
 
-  int searchWalletIndex(int targetID) {
+  int searchWalletIndex(String targetID) {
     int index = -1;
     for (int i = 0; i < _walletLists.length; i++) {
       if (_walletLists[i].id == targetID) {

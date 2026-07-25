@@ -6,7 +6,7 @@ enum TransactionType {
   transfer
 }
 class TransactionModel {
-  final int id;
+  final String id;
   final TransactionType type;
   final String category;
   final String? fromWalletId;
@@ -25,4 +25,30 @@ class TransactionModel {
     required this.description,
     required this.dateTime
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'type': type,
+      'category': category,
+      'fromWalletId': fromWalletId,
+      'toWalletId':  toWalletId,
+      'amount': amount,
+      'description': description,
+      'dateTime': dateTime.toIso8601String()
+    };
+  }
+
+  factory TransactionModel.fromMap(Map<String, dynamic> map) {
+    return TransactionModel(
+      id: map['id'] as String,
+      type: TransactionType.values.byName(map['type'] as String),
+      category: map['category'] as String,
+      fromWalletId: map['fromWalletId'] as String,
+      toWalletId: map['toWalletId'] as String,
+      amount: map['amount'] as int,
+      description: map['description'] as String,
+      dateTime: DateTime.parse(map['dateTime'] as String)
+    );
+  }
 }
