@@ -80,7 +80,7 @@ class FinancialManager {
     return true;
   }
 
-  Future<void> deleteWallet(MasterVault vault,  deleteID) async {
+  Future<void> deleteWallet(MasterVault vault, String deleteID) async {
     int index = searchWalletIndex(deleteID);
     if (index != -1) {
       dev.log(

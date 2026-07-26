@@ -29,7 +29,7 @@ class TransactionModel {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'type': type,
+      'type': type.name,
       'category': category,
       'fromWalletId': fromWalletId,
       'toWalletId':  toWalletId,
@@ -44,8 +44,8 @@ class TransactionModel {
       id: map['id'] as String,
       type: TransactionType.values.byName(map['type'] as String),
       category: map['category'] as String,
-      fromWalletId: map['fromWalletId'] as String,
-      toWalletId: map['toWalletId'] as String,
+      fromWalletId: map['fromWalletId'] as String?,
+      toWalletId: map['toWalletId'] as String?,
       amount: map['amount'] as int,
       description: map['description'] as String,
       dateTime: DateTime.parse(map['dateTime'] as String)
