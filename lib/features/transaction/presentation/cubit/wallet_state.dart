@@ -12,7 +12,7 @@ class WalletLoaded extends WalletStates {
 
   WalletLoaded({
     required this.vault,
-    required this.walletList
+    required this.walletList,
   });
 }
 class WalletError extends WalletStates {

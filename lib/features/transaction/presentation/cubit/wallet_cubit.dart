@@ -54,11 +54,64 @@ class WalletCubit extends Cubit<WalletStates>{
         vault: _masterVault,
         walletList: List.from(_manager.wallet))
       );
-    } 
-    on FinancialManagerExceptions catch (e) {
-      emit(WalletError(message: e.toString()));
-    } catch (e) {
-      emit(WalletError(message: "Loi hanh vi chua xac dinh!"));
+    } on FinancialManagerExceptions catch (error) {
+      emit(WalletError(message: error.toString()));
+    } catch (error) {
+      emit(WalletError(message: "Loi chua xac dinh (createWallet)!"));
     }
   }
+
+  Future<void> deleteWallet({ required String deleteID }) async {
+    try {
+      await _manager.deleteWallet(_masterVault, deleteID);
+      
+      emit(WalletLoaded(
+        vault: _masterVault,
+        walletList: List.from(_manager.wallet))
+      );
+    } on FinancialManagerExceptions catch(error) {
+      emit(WalletError(message: error.toString()));
+    } catch (error) {
+      emit(WalletError(message: "Loi chua xac dinh (deleteWallet)"));
+    }
+  }
+
+  Future<void> transferMoney({
+    required String fromWalletID,
+    required String toWalletID,
+    required int amount,
+    required String description
+  }) async {
+    try {
+      await _manager.transferMoney(_masterVault, fromWalletID, toWalletID, amount, description);
+
+      emit (WalletLoaded(
+        vault: _masterVault,
+        walletList: List.from(_manager.wallet))
+      );
+    } on FinancialManagerExceptions catch(error) {
+      emit(WalletError(message: error.toString()));
+    } catch (error) {
+      emit(WalletError(message: "Loi chua xac dinh (transferMoney)"));
+    }
+  }
+
+  Future<void> updateMasterVaultInfo({
+    required String ownerName,
+    required int initialBalance,
+  }) async {
+    try {
+      await _manager.updateMasterVaultInfo(_masterVault, ownerName, initialBalance);
+
+      emit (WalletLoaded(
+        vault: _masterVault,
+        walletList: List.from(_manager.wallet))
+      );
+    } on FinancialManagerExceptions catch(error) {
+      emit(WalletError(message: error.toString()));
+    } catch (error) {
+      emit(WalletError(message: "Loi chua xac dinh (updateMasterVault)"));
+    }
+  }
+  
 }
