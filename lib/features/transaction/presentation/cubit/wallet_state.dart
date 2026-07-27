@@ -1,6 +1,6 @@
 import 'package:expense_tracker/features/transaction/domain/mp_wallet.dart';
 import 'package:expense_tracker/features/transaction/domain/master_wallet.dart';
-
+import 'package:expense_tracker/features/transaction/domain/financial_statistic.dart';
 abstract class WalletStates {}
 
 class WalletInitial extends WalletStates {}
@@ -9,10 +9,12 @@ class WalletLoading extends WalletStates {}
 class WalletLoaded extends WalletStates {
   final MasterVault vault;
   final List<Wallet> walletList;
+  final FinancialStatistic? statistic;
 
   WalletLoaded({
     required this.vault,
     required this.walletList,
+    this.statistic
   });
 }
 class WalletError extends WalletStates {
