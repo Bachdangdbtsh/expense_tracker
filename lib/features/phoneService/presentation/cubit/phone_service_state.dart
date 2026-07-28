@@ -1,4 +1,4 @@
-import 'package:expense_tracker/features/transaction/domain/master_wallet.dart';
+import 'package:expense_tracker/features/wallet/domain/master_wallet.dart';
 
 abstract class PhoneServiceStates {}
 

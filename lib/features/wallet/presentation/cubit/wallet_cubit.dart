@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:expense_tracker/features/transaction/domain/financial_manager.dart';
-import 'package:expense_tracker/features/transaction/domain/master_wallet.dart';
+import 'package:expense_tracker/features/wallet/domain/financial_manager.dart';
+import 'package:expense_tracker/features/wallet/domain/master_wallet.dart';
 import 'package:expense_tracker/core/errors/financial_manager_exceptions.dart';
 import 'wallet_state.dart';
 
@@ -18,7 +18,8 @@ class WalletCubit extends Cubit<WalletStates> {
 
       if (vault != null) {
         _masterVault = vault;
-      } else {
+      }
+      else {
         _masterVault = MasterVault(
           accountID: "Unknown", 
           ownerName: "Unknown", 
@@ -115,7 +116,7 @@ class WalletCubit extends Cubit<WalletStates> {
     }
   }
 
-  // Hàm thủ công để lấy / làm mới thống kê khi cần
+
   void getStatistic() {
     try {
       final stat = _manager.financialStatistic(_masterVault); 

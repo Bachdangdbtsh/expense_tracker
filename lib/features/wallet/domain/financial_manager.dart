@@ -1,10 +1,10 @@
 import 'package:expense_tracker/core/errors/financial_manager_exceptions.dart';
 import 'package:expense_tracker/core/utils/local_storage_service.dart';
-import 'package:expense_tracker/features/transaction/domain/financial_statistic.dart';
-import 'package:expense_tracker/features/transaction/domain/mobile_data.dart';
-import 'package:expense_tracker/features/transaction/domain/mp_wallet.dart';
-import 'package:expense_tracker/features/transaction/domain/transaction.dart';
-import 'package:expense_tracker/features/transaction/domain/master_wallet.dart';
+import 'package:expense_tracker/features/wallet/domain/financial_statistic.dart';
+import 'package:expense_tracker/features/phoneService/domain/mobile_data.dart';
+import 'package:expense_tracker/features/wallet/domain/mp_wallet.dart';
+import 'package:expense_tracker/features/wallet/domain/transaction.dart';
+import 'package:expense_tracker/features/wallet/domain/master_wallet.dart';
 import 'dart:developer' as dev;
 
 class FinancialManager {
@@ -20,7 +20,7 @@ class FinancialManager {
     final data = await _storageService.loadData();
     if (data == null) return null; // App mới chưa có dữ liệu
 
-    // ap lai danh sach vi
+    // Nap lai danh sach vi
     _walletLists.clear();
     final List<dynamic> walletsJson = data['wallets'];
     for (var item in walletsJson) {
@@ -38,14 +38,7 @@ class FinancialManager {
     return MasterVault.fromMap(data['masterVault']);
   }
 
-  // 2. Hàm hỗ trợ lưu State hiện tại xuống ổ cứng
-  Future<void> _autoSave(MasterVault vault) async {
-    await _storageService.saveData(
-      masterVaultMap: vault.toMap(),
-      walletListMaps: _walletLists.map((w) => w.toMap()).toList(),
-      transactionListMaps: _transactionHistory.map((t) => t.toMap()).toList(),
-    );
-  }
+
   
 
   //--------------------------------------------------------------------------//
@@ -278,5 +271,14 @@ class FinancialManager {
       throw ExceedMasterVaultLimitException();
     }
     return true;
+  }
+
+    // Ham ho tro luu State hien tai
+  Future<void> _autoSave(MasterVault vault) async {
+    await _storageService.saveData(
+      masterVaultMap: vault.toMap(),
+      walletListMaps: _walletLists.map((w) => w.toMap()).toList(),
+      transactionListMaps: _transactionHistory.map((t) => t.toMap()).toList(),
+    );
   }
 }

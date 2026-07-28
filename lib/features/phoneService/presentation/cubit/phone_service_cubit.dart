@@ -1,8 +1,8 @@
-import 'package:expense_tracker/features/transaction/presentation/cubit/phone_service_state.dart';
+import 'package:expense_tracker/features/phoneService/presentation/cubit/phone_service_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:expense_tracker/features/transaction/domain/financial_manager.dart';
-import 'package:expense_tracker/features/transaction/domain/mobile_data.dart';
-import 'package:expense_tracker/features/transaction/domain/master_wallet.dart';
+import 'package:expense_tracker/features/wallet/domain/financial_manager.dart';
+import 'package:expense_tracker/features/phoneService/domain/mobile_data.dart';
+import 'package:expense_tracker/features/wallet/domain/master_wallet.dart';
 import 'package:expense_tracker/core/errors/financial_manager_exceptions.dart';
 
 class PhoneServiceCubit extends Cubit<PhoneServiceStates>{

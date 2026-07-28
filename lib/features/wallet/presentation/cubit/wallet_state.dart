@@ -1,6 +1,6 @@
-import 'package:expense_tracker/features/transaction/domain/mp_wallet.dart';
-import 'package:expense_tracker/features/transaction/domain/master_wallet.dart';
-import 'package:expense_tracker/features/transaction/domain/financial_statistic.dart';
+import 'package:expense_tracker/features/wallet/domain/mp_wallet.dart';
+import 'package:expense_tracker/features/wallet/domain/master_wallet.dart';
+import 'package:expense_tracker/features/wallet/domain/financial_statistic.dart';
 abstract class WalletStates {}
 
 class WalletInitial extends WalletStates {}
