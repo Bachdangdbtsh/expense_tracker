@@ -4,16 +4,38 @@ import 'package:expense_tracker/features/wallet/presentation/cubit/wallet_cubit.
 import 'package:expense_tracker/features/wallet/presentation/cubit/wallet_state.dart';
 import 'package:expense_tracker/features/phoneService/presentation/cubit/phone_service_cubit.dart';
 import 'package:expense_tracker/features/phoneService/presentation/cubit/phone_service_state.dart';
-import 'package:expense_tracker/features/phoneService/domain/mobile_data.dart';
+
+// Import các Dialog từ folder widgets
+import 'package:expense_tracker/features/dashboard/presentation/widget/top_up_dialog.dart';
+import 'package:expense_tracker/features/dashboard/presentation/widget/mobile_data_dialog.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
+
+  void _showTopUpDialog(BuildContext context, String masterVaultId) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => TopUpDialog(
+        masterVaultId: masterVaultId,
+        parentContext: context,
+      ),
+    );
+  }
+
+  void _showMobileDataDialog(BuildContext context, String masterVaultId) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => MobileDataDialog(
+        masterVaultId: masterVaultId,
+        parentContext: context,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
       listeners: [
-        // Lắng nghe thông báo lỗi từ WalletCubit
         BlocListener<WalletCubit, WalletStates>(
           listener: (context, state) {
             if (state is WalletError) {
@@ -23,7 +45,6 @@ class DashboardScreen extends StatelessWidget {
             }
           },
         ),
-        // Lắng nghe kết quả từ PhoneServiceCubit (Topup/Data)
         BlocListener<PhoneServiceCubit, PhoneServiceStates>(
           listener: (context, state) {
             if (state is PhoneServiceError) {
@@ -37,7 +58,6 @@ class DashboardScreen extends StatelessWidget {
                   backgroundColor: Colors.green,
                 ),
               );
-              // Tải lại dữ liệu ví mới nhất để cập nhật lại số dư trên UI
               context.read<WalletCubit>().loadInitialData();
             }
           },
@@ -47,7 +67,6 @@ class DashboardScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Quản lý chi tiêu'),
           actions: [
-            // Nút bấm làm mới / tính toán lại Thống kê
             IconButton(
               icon: const Icon(Icons.analytics),
               onPressed: () {
@@ -63,12 +82,12 @@ class DashboardScreen extends StatelessWidget {
             }
 
             if (state is WalletLoaded) {
-              final stat = state.statistic; // Lấy dữ liệu thống kê
+              final stat = state.statistic;
 
               return ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
-                  // 1. THONG TIN MASTER VAULT & STATISTIC (FinancialStatistic)
+                  // 1. THÔNG TIN MASTER VAULT & STATISTIC
                   Card(
                     color: Colors.blue.shade50,
                     child: Padding(
@@ -92,11 +111,10 @@ class DashboardScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // 2. DICH VU VIEN THONG (Topup & Mobile Data)
+                  // 2. DỊCH VỤ VIỄN THÔNG (Topup & Mobile Data)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      // Nút Nạp tiền điện thoại
                       ElevatedButton.icon(
                         icon: const Icon(Icons.phone_android),
                         label: const Text('Nạp ĐT'),
@@ -104,7 +122,6 @@ class DashboardScreen extends StatelessWidget {
                           _showTopUpDialog(context, state.vault.accountID);
                         },
                       ),
-                      // Nút Mua Data 3G/4G
                       ElevatedButton.icon(
                         icon: const Icon(Icons.wifi),
                         label: const Text('Mua Data'),
@@ -116,7 +133,8 @@ class DashboardScreen extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 16),
-                  const Text('Danh sách ví:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text('Danh sách ví:',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
 
                   // 3. DANH SÁCH CÁC VÍ
                   ...state.walletList.map((wallet) => ListTile(
@@ -132,322 +150,6 @@ class DashboardScreen extends StatelessWidget {
           },
         ),
       ),
-    );
-  }
-
-  void _showTopUpDialog(BuildContext context, String masterVaultId) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => _TopUpDialog(
-        masterVaultId: masterVaultId,
-        parentContext: context,
-      ),
-    );
-  }
-  // Dialog gọi hàm Mua gói cước Data
-  void _showMobileDataDialog(BuildContext context, String masterVaultId) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => _MobileDataDialog(
-        masterVaultId: masterVaultId,
-        parentContext: context,
-      ),
-    );
-  }
-
-
-}
-
-class _TopUpDialog extends StatefulWidget {
-  final String masterVaultId;
-  final BuildContext parentContext;
-
-  const _TopUpDialog({
-    required this.masterVaultId,
-    required this.parentContext
-  });
-  @override
-  State<_TopUpDialog> createState() => _TopUpDialogState();
-}
-
-class _TopUpDialogState extends State<_TopUpDialog> {
-  late final TextEditingController _phoneController;
-  late final TextEditingController _amountController;
-  String? _selectedWalletId;
-
-  @override 
-  void initState() {
-    super.initState();
-    _phoneController = TextEditingController();
-    _amountController = TextEditingController();
-  }
-
-  @override 
-  void dispose() {
-    _phoneController.dispose();
-    _amountController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext content) {
-    final walletState = widget.parentContext.read<WalletCubit>().state;
-    List<dynamic> walletList = [];
-    if (walletState is WalletLoaded) {
-      walletList = walletState.walletList;
-    }
-
-    return AlertDialog(
-      title: const Text('Nap dien dien thoai'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              initialValue: _selectedWalletId,
-              decoration: const InputDecoration(
-                labelText: 'Vi thanh toan',
-                prefixIcon: Icon(Icons.account_balance_wallet),
-                border: OutlineInputBorder(),
-              ),
-              hint: const Text('Chon vi thanh toan'),
-              items: walletList.map((wallet) {
-                return DropdownMenuItem<String>(
-                  value: wallet.id,
-                  child: Text('${wallet.category} (${wallet.balance} VND)'),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedWalletId = value);
-              },
-            ),
-            const SizedBox(height: 12),
-
-            TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: "So dien thoai: ",
-                hintText: "VD: 0123456789",
-                prefixIcon: Icon(Icons.phone_android),
-                border: OutlineInputBorder()
-              ),
-            ),
-
-            TextField(
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'So tien nap (VND)',
-                hintText: 'VD: 10000, 20000, 50000,...',
-                prefixIcon: Icon(Icons.attach_money),
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel")
-        ),
-        
-        ElevatedButton(
-          onPressed: () {
-            final phone = _phoneController.text.trim();
-            final amountText = _amountController.text.trim();
-            final amount = int.tryParse(amountText) ?? 0;
-
-            if (_selectedWalletId == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Vui long chon vi thanh toan!')),
-              );
-              return;
-            }
-
-            if (phone.isEmpty || amount <= 0) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('So dien thoai hoac so tien khong hop le!')),
-              );
-              return;
-            }
-
-            widget.parentContext.read<PhoneServiceCubit>().topUpPhoneCredit(
-                  fromWalletID: _selectedWalletId!,
-                  amount: amount,
-                  phoneNumber: phone,
-                );
-
-            Navigator.pop(context);
-          },
-          child: const Text('Nap ngay!'),
-        ),
-      ],
-    );
-  }
-}
-class _MobileDataDialog extends StatefulWidget {
-  final String masterVaultId;
-  final BuildContext parentContext;
-
-  const _MobileDataDialog({
-    required this.masterVaultId,
-    required this.parentContext,
-  });
-
-  @override
-  State<_MobileDataDialog> createState() => _MobileDataDialogState();
-}
-
-class _MobileDataDialogState extends State<_MobileDataDialog> {
-  late final TextEditingController _phoneController;
-  String? _selectedWalletId;
-  InternetServiceProvider _selectedIsp = InternetServiceProvider.viettel;
-  String _selectedPlan = "MD2";
-
-  @override
-  void initState() {
-    super.initState();
-    _phoneController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _phoneController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final walletState = widget.parentContext.read<WalletCubit>().state;
-    List<dynamic> walletList = [];
-    if (walletState is WalletLoaded) {
-      walletList = walletState.walletList;
-    }
-
-    return AlertDialog(
-      title: const Text('Mua gói cước Data'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Ô chọn Ví thanh toán
-            DropdownButtonFormField<String>(
-              initialValue: _selectedWalletId,
-              decoration: const InputDecoration(
-                labelText: 'Trừ tiền từ ví',
-                prefixIcon: Icon(Icons.account_balance_wallet),
-                border: OutlineInputBorder(),
-              ),
-              hint: const Text('Chọn ví thanh toán'),
-              items: walletList.map((wallet) {
-                return DropdownMenuItem<String>(
-                  value: wallet.id,
-                  child: Text('${wallet.category} (${wallet.balance} VND)'),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedWalletId = value);
-              },
-            ),
-            const SizedBox(height: 12),
-
-            // Ô nhập Số điện thoại
-            TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Số điện thoại',
-                hintText: 'VD: 0901234567',
-                prefixIcon: Icon(Icons.phone_android),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Dropdown chọn Nhà mạng (ISP)
-            DropdownButtonFormField<InternetServiceProvider>(
-              initialValue: _selectedIsp,
-              decoration: const InputDecoration(
-                labelText: 'Nhà mạng',
-                prefixIcon: Icon(Icons.cell_tower),
-                border: OutlineInputBorder(),
-              ),
-              items: InternetServiceProvider.values.map((isp) {
-                return DropdownMenuItem(
-                  value: isp,
-                  child: Text(isp.name.toUpperCase()),
-                );
-              }).toList(),
-              onChanged: (newValue) {
-                if (newValue != null) {
-                  setState(() => _selectedIsp = newValue);
-                }
-              },
-            ),
-            const SizedBox(height: 12),
-
-            // Dropdown chọn Gói Data
-            DropdownButtonFormField<String>(
-              initialValue: _selectedPlan,
-              decoration: const InputDecoration(
-                labelText: 'Gói Data',
-                prefixIcon: Icon(Icons.wifi_tethering),
-                border: OutlineInputBorder(),
-              ),
-              items: commonMobileDataPlan.keys.map((planKey) {
-                final price = commonMobileDataPlan[planKey];
-                return DropdownMenuItem(
-                  value: planKey,
-                  child: Text('$planKey ($price VND)'),
-                );
-              }).toList(),
-              onChanged: (newValue) {
-                if (newValue != null) {
-                  setState(() => _selectedPlan = newValue);
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Hủy'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            final phone = _phoneController.text.trim();
-
-            if (_selectedWalletId == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Vui lòng chọn ví thanh toán!')),
-              );
-              return;
-            }
-
-            if (phone.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Vui lòng nhập số điện thoại!')),
-              );
-              return;
-            }
-
-            // Goi Cubit
-            widget.parentContext.read<PhoneServiceCubit>().purchaseMobileData(
-                  fromWalletID: _selectedWalletId!,
-                  isp: _selectedIsp,
-                  mobileDataplan: _selectedPlan,
-                  phoneNumber: phone,
-                );
-
-            Navigator.pop(context);
-          },
-          child: const Text('Mua ngay'),
-        ),
-      ],
     );
   }
 }
