@@ -334,7 +334,7 @@ class _MobileDataDialogState extends State<_MobileDataDialog> {
           children: [
             // Ô chọn Ví thanh toán
             DropdownButtonFormField<String>(
-              value: _selectedWalletId,
+              initialValue: _selectedWalletId,
               decoration: const InputDecoration(
                 labelText: 'Trừ tiền từ ví',
                 prefixIcon: Icon(Icons.account_balance_wallet),
@@ -368,7 +368,7 @@ class _MobileDataDialogState extends State<_MobileDataDialog> {
 
             // Dropdown chọn Nhà mạng (ISP)
             DropdownButtonFormField<InternetServiceProvider>(
-              value: _selectedIsp,
+              initialValue: _selectedIsp,
               decoration: const InputDecoration(
                 labelText: 'Nhà mạng',
                 prefixIcon: Icon(Icons.cell_tower),
@@ -390,7 +390,7 @@ class _MobileDataDialogState extends State<_MobileDataDialog> {
 
             // Dropdown chọn Gói Data
             DropdownButtonFormField<String>(
-              value: _selectedPlan,
+              initialValue: _selectedPlan,
               decoration: const InputDecoration(
                 labelText: 'Gói Data',
                 prefixIcon: Icon(Icons.wifi_tethering),
