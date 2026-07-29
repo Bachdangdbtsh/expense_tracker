@@ -43,10 +43,10 @@ class WalletCubit extends Cubit<WalletStates> {
   Future<void> createWallet({
     required String name, 
     required String category,
-    required int balance,
+    required int initialBalance
   }) async {
     try {
-      await _manager.createWallet(_masterVault, name, category, balance);
+      await _manager.createWallet(_masterVault, name, category, initialBalance);
 
       emit(WalletLoaded(
         vault: _masterVault,
