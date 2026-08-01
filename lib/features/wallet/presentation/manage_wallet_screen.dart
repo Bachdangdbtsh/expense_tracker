@@ -5,8 +5,8 @@ import 'package:expense_tracker/features/wallet/presentation/cubit/wallet_state.
 import 'package:expense_tracker/features/wallet/presentation/widget/create_wallet_dialog.dart';
 import 'package:expense_tracker/features/wallet/presentation/widget/delete_wallet_dialog.dart';
 
-class CreateWalletScreen extends StatelessWidget {
-  const CreateWalletScreen({super.key});
+class ManageWalletScreen extends StatelessWidget {
+  const ManageWalletScreen({super.key});
 
   void _showCreateWalletDialog(BuildContext context) {
     showDialog(

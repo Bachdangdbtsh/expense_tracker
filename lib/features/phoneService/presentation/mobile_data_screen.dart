@@ -1,37 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:expense_tracker/features/phoneService/domain/mobile_data.dart';
 import 'package:expense_tracker/features/phoneService/presentation/cubit/phone_service_cubit.dart';
 import 'package:expense_tracker/features/phoneService/presentation/cubit/phone_service_state.dart';
 import 'package:expense_tracker/features/wallet/presentation/cubit/wallet_cubit.dart';
 import 'package:expense_tracker/features/wallet/presentation/cubit/wallet_state.dart';
 
-class TopupScreen extends StatefulWidget {
-  const TopupScreen({super.key});
+class MobileDataScreen extends StatefulWidget {
+  const MobileDataScreen({super.key});
 
   @override
-  State<TopupScreen> createState() => _TopupScreenState();
+  State<MobileDataScreen> createState() => _MobileDataScreenState();
 }
 
-class _TopupScreenState extends State<TopupScreen> {
+class _MobileDataScreenState extends State<MobileDataScreen> {
   late final TextEditingController _phoneController;
 
   String? _selectedWalletId;
-  int _selectedAmount = 20000;
-
-  // Danh sách mệnh giá nạp
-  final List<int> _amounts = [
-    10000,
-    20000,
-    30000,
-    50000,
-    70000,
-    100000,
-    120000,
-    150000,
-    200000,
-    300000,
-    500000
-  ];
+  InternetServiceProvider _selectedISP = InternetServiceProvider.viettel;
+  String _selectedPlan = "MD1";
 
   @override
   void initState() {
@@ -62,10 +49,11 @@ class _TopupScreenState extends State<TopupScreen> {
       return;
     }
 
-    // Gọi Cubit để thực hiện giao dịch nạp tiền
-    context.read<PhoneServiceCubit>().topUpPhoneCredit(
+    // Gọi Cubit xử lý giao dịch
+    context.read<PhoneServiceCubit>().purchaseMobileData(
           fromWalletID: _selectedWalletId!,
-          amount: _selectedAmount,
+          isp: _selectedISP,
+          mobileDataplan: _selectedPlan,
           phoneNumber: phone,
         );
   }
@@ -83,19 +71,19 @@ class _TopupScreenState extends State<TopupScreen> {
           );
         } else if (state is PhoneServiceLoaded) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Nạp tiền điện thoại thành công!'),
+            SnackBar(
+              content: Text('Mua gói cước $_selectedPlan thành công !'),
               backgroundColor: Colors.green,
             ),
           );
-          // Cập nhật lại số dư ví sau khi nạp thành công
+          // Cập nhật lại số dư các ví sau khi nạp thành công
           context.read<WalletCubit>().loadInitialData();
-          Navigator.pop(context); // Đóng màn hình
+          Navigator.pop(context); // Quay về màn hình trước
         }
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("Nạp tiền điện thoại"),
+          title: const Text("Mua dữ liệu di động"),
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -104,7 +92,7 @@ class _TopupScreenState extends State<TopupScreen> {
             children: [
               // 1. CHỌN VÍ THANH TOÁN
               const Text(
-                "Nguồn tiền thanh toán",
+                "Danh sách ví thanh toán",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 8),
@@ -153,9 +141,32 @@ class _TopupScreenState extends State<TopupScreen> {
 
               const SizedBox(height: 24),
 
-              // 2. NHẬP SỐ ĐIỆN THOẠI
+              // 2. CHỌN NHÀ MẠNG (ISP)
               const Text(
-                "Thông tin người nhận",
+                "Chọn nhà mạng",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<InternetServiceProvider>(
+                segments: InternetServiceProvider.values.map((isp) {
+                  return ButtonSegment<InternetServiceProvider>(
+                    value: isp,
+                    label: Text(isp.name.toUpperCase()),
+                  );
+                }).toList(),
+                selected: {_selectedISP},
+                onSelectionChanged: (newSelection) {
+                  setState(() {
+                    _selectedISP = newSelection.first;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 24),
+
+              // 3. NHẬP SỐ ĐIỆN THOẠI
+              const Text(
+                "Thông tin thuê bao",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 8),
@@ -172,59 +183,85 @@ class _TopupScreenState extends State<TopupScreen> {
 
               const SizedBox(height: 24),
 
-              // 3. CHỌN MỆNH GIÁ NẠP
+              // 4. CHỌN GÓI CƯỚC DATA
               const Text(
-                "Chọn mệnh giá nạp",
+                "Chọn gói cước khả dụng",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 10.0,
-                runSpacing: 10.0,
-                children: _amounts.map((amount) {
-                  final isSelected = _selectedAmount == amount;
-                  return ChoiceChip(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12.0, vertical: 8.0),
-                    label: Text(
-                      "${amount ~/ 1000}k",
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: isSelected ? Colors.white : Colors.black87,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                    selected: isSelected,
-                    selectedColor: Theme.of(context).primaryColor,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _selectedAmount = amount;
-                        });
-                      }
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 2.2,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10
+                ),
+                itemCount: commonMobileDataPlan.length,
+                itemBuilder: (context, index) {
+                  final planKey = commonMobileDataPlan.keys.elementAt(index);
+                  final price = commonMobileDataPlan.values.elementAt(index);
+                  final isSelected = _selectedPlan == planKey;
+
+                  return InkWell(
+                    onTap: () {
+                      setState(() {
+                        _selectedPlan = planKey;
+                      });
                     },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isSelected ? Theme.of(context).primaryColor.withValues(alpha: 0.15) : Colors.grey.shade100,
+                        border: Border.all(
+                          color: isSelected ? Theme.of(context).primaryColor : Colors.grey.shade300,
+                          width: isSelected ? 2 : 1
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+
+                      padding: const EdgeInsets.all(8),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            planKey,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: isSelected
+                                  ? Theme.of(context).primaryColor
+                                  : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "${price ~/ 1000}k VND",
+                            style: TextStyle(
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                   );
-                }).toList(),
+                },
               ),
 
+              // 5. XÁC NHẬN MUA GÓI DATA
               const SizedBox(height: 32),
-
-              // 4. NÚT XÁC NHẬN NẠP TIỀN
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton.icon(
-                  onPressed: _submitTopup,
-                  icon: const Icon(Icons.flash_on_rounded),
+                  onPressed: _submitTopup, 
                   label: Text(
-                    "Nạp ${_selectedAmount ~/ 1000}k Ngay",
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold
-                    ),
+                    "Đăng ký gói $_selectedPlan (${(commonMobileDataPlan[_selectedPlan] ?? 0) ~/ 1000}k)", 
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
                   ),
                 ),
-              ),
+              )
             ],
           ),
         ),
