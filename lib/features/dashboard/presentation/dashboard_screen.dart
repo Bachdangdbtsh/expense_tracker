@@ -8,9 +8,21 @@ import 'package:expense_tracker/features/phoneService/presentation/cubit/phone_s
 // Import các Dialog từ folder widgets
 import 'package:expense_tracker/features/dashboard/presentation/widget/top_up_dialog.dart';
 import 'package:expense_tracker/features/dashboard/presentation/widget/mobile_data_dialog.dart';
-
+import 'package:expense_tracker/features/wallet/presentation/widget/edit_master_vault_dialog.dart';
+import 'package:expense_tracker/features/wallet/presentation/statistic_screen.dart';
+import 'package:expense_tracker/features/wallet/domain/master_wallet.dart';
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
+
+
+  void _showEditMasterVaultDialog(BuildContext context, MasterVault currentVault) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => EditMasterVaultDialog(
+        currentVault: currentVault,
+      ),
+    );
+  }
 
   void _showTopUpDialog(BuildContext context, String masterVaultId) {
     showDialog(
@@ -71,8 +83,12 @@ class DashboardScreen extends StatelessWidget {
               icon: const Icon(Icons.analytics),
               onPressed: () {
                 context.read<WalletCubit>().getStatistic();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const StatisticScreen()),
+                );
               },
-            ),
+            )
           ],
         ),
         body: BlocBuilder<WalletCubit, WalletStates>(
@@ -95,20 +111,44 @@ class DashboardScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Chủ tài khoản: ${state.vault.ownerName}',
-                              style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text('Tổng hạn mức: ${state.vault.totalBalance} VND'),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Chủ tài khoản: ${state.vault.ownerName}',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
+                                ),
+                              ),
+                              // Nút bấm mở Dialog chỉnh sửa Master Vault
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined,
+                                    color: Colors.indigo),
+                                tooltip: 'Chỉnh sửa tài khoản nguồn',
+                                onPressed: () {
+                                  _showEditMasterVaultDialog(
+                                      context, state.vault);
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text('Tổng hạn mức: ${state.vault.totalBalance} VND',
+                              style: const TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w500)),
                           const Divider(),
-                          Text('Tổng đã chi: ${stat?.totalExpense} VND',
+                          Text('Tổng đã chi: ${stat?.totalExpense ?? 0} VND',
                               style: const TextStyle(color: Colors.red)),
-                          Text('Tổng thu nhập: ${stat?.totalIncome} VND',
+                          Text('Tổng thu nhập: ${stat?.totalIncome ?? 0} VND',
                               style: const TextStyle(color: Colors.green)),
-                          Text('Ngân sách còn lại: ${stat?.remainingBudget} VND'),
+                          Text('Ngân sách còn lại: ${stat?.remainingBudget ?? 0} VND',
+                              style: const TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 16),
 
                   // 2. DỊCH VỤ VIỄN THÔNG (Topup & Mobile Data)
@@ -123,8 +163,8 @@ class DashboardScreen extends StatelessWidget {
                         },
                       ),
                       ElevatedButton.icon(
-                        icon: const Icon(Icons.wifi),
-                        label: const Text('Mua Data'),
+                        icon: const Icon(Icons.four_g_mobiledata_rounded),
+                        label: const Text('Mua Data 4G/5G'),
                         onPressed: () {
                           _showMobileDataDialog(context, state.vault.accountID);
                         },
