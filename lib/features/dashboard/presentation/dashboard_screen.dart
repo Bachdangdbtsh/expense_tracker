@@ -10,6 +10,7 @@ import 'package:expense_tracker/features/dashboard/presentation/widget/top_up_di
 import 'package:expense_tracker/features/dashboard/presentation/widget/mobile_data_dialog.dart';
 import 'package:expense_tracker/features/wallet/presentation/widget/edit_master_vault_dialog.dart';
 import 'package:expense_tracker/features/wallet/presentation/statistic_screen.dart';
+import 'package:expense_tracker/features/dashboard/presentation/transaction_history_screen.dart';
 import 'package:expense_tracker/features/wallet/domain/master_wallet.dart';
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -79,6 +80,18 @@ class DashboardScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Quản lý chi tiêu'),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.history),
+              tooltip: 'Lịch sử giao dịch',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TransactionHistoryScreen(),
+                  ),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.analytics),
               onPressed: () {

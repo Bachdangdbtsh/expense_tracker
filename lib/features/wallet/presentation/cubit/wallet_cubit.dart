@@ -33,6 +33,7 @@ class WalletCubit extends Cubit<WalletStates> {
       emit(WalletLoaded(
         vault: _masterVault,
         walletList: List.from(_manager.wallet),
+        transactionHistory: List.from(_manager.transHistory),
         statistic: stat,
       ));
     } catch (error) {
@@ -51,6 +52,7 @@ class WalletCubit extends Cubit<WalletStates> {
       emit(WalletLoaded(
         vault: _masterVault,
         walletList: List.from(_manager.wallet),
+        transactionHistory: List.from(_manager.transHistory),
         statistic: _manager.financialStatistic(_masterVault),
       ));
     } on FinancialManagerExceptions catch (error) {
@@ -67,6 +69,7 @@ class WalletCubit extends Cubit<WalletStates> {
       emit(WalletLoaded(
         vault: _masterVault,
         walletList: List.from(_manager.wallet),
+        transactionHistory: List.from(_manager.transHistory),
         statistic: _manager.financialStatistic(_masterVault),
       ));
     } on FinancialManagerExceptions catch (error) {
@@ -88,6 +91,7 @@ class WalletCubit extends Cubit<WalletStates> {
       emit(WalletLoaded(
         vault: _masterVault,
         walletList: List.from(_manager.wallet),
+        transactionHistory: List.from(_manager.transHistory),
         statistic: _manager.financialStatistic(_masterVault),
       ));
     } on FinancialManagerExceptions catch (error) {
@@ -107,6 +111,7 @@ class WalletCubit extends Cubit<WalletStates> {
       emit(WalletLoaded(
         vault: _masterVault,
         walletList: List.from(_manager.wallet),
+        transactionHistory: List.from(_manager.transHistory),
         statistic: _manager.financialStatistic(_masterVault),
       ));
     } on FinancialManagerExceptions catch (error) {
@@ -123,6 +128,7 @@ class WalletCubit extends Cubit<WalletStates> {
       emit(WalletLoaded(
         vault: _masterVault,
         walletList: List.from(_manager.wallet), 
+        transactionHistory: List.from(_manager.transHistory),
         statistic: stat,
       ));
     } on FinancialManagerExceptions catch (error) {
