@@ -10,6 +10,15 @@ class StatisticScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: 40,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12.0),
+          child: Image.asset(
+            'Assets/247_LOGO.png',
+            fit: BoxFit.contain,
+          ),
+        ),
+
         title: const Text('Thống kê chi tiêu'),
       ),
       body: BlocBuilder<WalletCubit, WalletStates>(

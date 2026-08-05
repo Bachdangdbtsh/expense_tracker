@@ -58,6 +58,19 @@ class _MobileDataScreenState extends State<MobileDataScreen> {
         );
   }
 
+  String _getIspLogoPath(InternetServiceProvider isp) {
+    switch (isp) {
+      case InternetServiceProvider.viettel:
+        return 'Assets/viettel_logo.png';
+      case InternetServiceProvider.vinaphone:
+        return 'Assets/vinaphone_logo.png';
+      case InternetServiceProvider.mobiphone:
+        return 'Assets/mobifone_logo.png';
+      case InternetServiceProvider.fptTelecom:
+        return 'Assets/fpt_logo.png';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<PhoneServiceCubit, PhoneServiceStates>(
@@ -83,6 +96,15 @@ class _MobileDataScreenState extends State<MobileDataScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
+          leadingWidth: 40,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 12.0),
+            child: Image.asset(
+              'Assets/247_LOGO.png',
+              fit: BoxFit.contain,
+            ),
+          ),
+          
           title: const Text("Mua dữ liệu di động"),
         ),
         body: SingleChildScrollView(
@@ -147,11 +169,19 @@ class _MobileDataScreenState extends State<MobileDataScreen> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 8),
+
               SegmentedButton<InternetServiceProvider>(
                 segments: InternetServiceProvider.values.map((isp) {
                   return ButtonSegment<InternetServiceProvider>(
                     value: isp,
-                    label: Text(isp.name.toUpperCase()),
+                    label: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Image.asset(
+                        _getIspLogoPath(isp),
+                        height: 24,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                   );
                 }).toList(),
                 selected: {_selectedISP},

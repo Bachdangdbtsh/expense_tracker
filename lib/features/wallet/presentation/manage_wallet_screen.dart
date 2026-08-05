@@ -40,6 +40,15 @@ class ManageWalletScreen extends StatelessWidget {
       },
       child: Scaffold(
         appBar: AppBar(
+          leadingWidth: 40,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 12.0),
+            child: Image.asset(
+              'Assets/247_LOGO.png',
+              fit: BoxFit.contain,
+            ),
+          ),
+
           title: const Text("Quản lý & Tạo ví mới"),
           actions: [
             IconButton(

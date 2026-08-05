@@ -58,6 +58,12 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - Assets/247_LOGO.png
+    - Assets/fpt_logo.png
+    - Assets/mobifone_logo.png
+    - Assets/viettel_logo.png
+    - Assets/vinaphone_logo.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

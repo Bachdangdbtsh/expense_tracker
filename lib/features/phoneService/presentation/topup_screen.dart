@@ -95,6 +95,15 @@ class _TopupScreenState extends State<TopupScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
+          leadingWidth: 40,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 12.0),
+            child: Image.asset(
+              'Assets/247_LOGO.png',
+              fit: BoxFit.contain,
+            ),
+          ),
+          
           title: const Text("Nạp tiền điện thoại"),
         ),
         body: SingleChildScrollView(
