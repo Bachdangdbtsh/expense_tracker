@@ -4,6 +4,8 @@ import 'package:expense_tracker/features/wallet/presentation/cubit/wallet_cubit.
 import 'package:expense_tracker/features/wallet/presentation/cubit/wallet_state.dart';
 import 'package:expense_tracker/features/wallet/presentation/widget/create_wallet_dialog.dart';
 import 'package:expense_tracker/features/wallet/presentation/widget/delete_wallet_dialog.dart';
+import 'package:expense_tracker/features/wallet/domain/mp_wallet.dart';
+import 'package:expense_tracker/features/wallet/presentation/widget/transfer_money_dialog.dart';
 
 class ManageWalletScreen extends StatelessWidget {
   const ManageWalletScreen({super.key});
@@ -24,6 +26,26 @@ class ManageWalletScreen extends StatelessWidget {
         walletId: walletId,
         walletName: walletName,
         parentContext: context,
+      ),
+    );
+  }
+
+  void _showTransferMoneyDialog(BuildContext context, Wallet sourceWallet, List<Wallet> availableWallets) {
+    if (availableWallets.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Cần ít nhất 2 ví để thực hiện chuyển tiền!"),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => TransferMoneyDialog(
+        sourceWallet: sourceWallet,
+        walletList: availableWallets,
       ),
     );
   }
@@ -49,7 +71,7 @@ class ManageWalletScreen extends StatelessWidget {
             ),
           ),
 
-          title: const Text("Quản lý & Tạo ví mới"),
+          title: const Text("Quản lý ví của bạn"),
           actions: [
             IconButton(
               onPressed: () => _showCreateWalletDialog(context),
@@ -186,16 +208,28 @@ class ManageWalletScreen extends StatelessWidget {
                                 ),
                               ),
                               // Nút bấm xóa ví trực tiếp từng item
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete_outline_outlined, color: Colors.redAccent),
-                                tooltip: "Xóa ví này",
-                                onPressed: () {
-                                  _showDeleteWalletDialog(
-                                    context,
-                                    wallet.id,
-                                    wallet.category,
-                                  );
-                                },
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.swap_horiz_rounded, color: Colors.indigo),
+                                    tooltip: "Chuyển tiền sang ví khác",
+                                    onPressed: () {
+                                      _showTransferMoneyDialog(context, wallet, wallets);
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline_outlined, color: Colors.redAccent),
+                                    tooltip: "Xóa ví này",
+                                    onPressed: () {
+                                      _showDeleteWalletDialog(
+                                        context,
+                                        wallet.id,
+                                        wallet.category,
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                           );
